@@ -55,10 +55,10 @@ void loop() {
   valTemp = analogRead(tempPin);
 
   // print out the value you read:
-  Serial.println(sensorValue);
+  Serial.println(valTemp);
   
   // scale it to use it with the servo (value between 0 and 180)
-  val = map(valTemp, minTemp, maxTemp, minDegrees, maxDegrees); 
+  int val = map(valTemp, minTemp, maxTemp, minDegrees, maxDegrees); 
   myservo.write(val); // sets the servo position according to the scaled value
   delay(delayTime);   
 
