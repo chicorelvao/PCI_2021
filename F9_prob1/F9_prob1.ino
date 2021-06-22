@@ -29,10 +29,26 @@ int tempPin = A0;  // analog pin used to connect o sensor de temperatura
 /*----- Valores medidos -------*/
 int valTemp = 0;    // variable to read the value from the analog pin
 
+int val = 0; //valor de controlo para mapear de bits para angulos
+
 /*----- LIMITES DOS INTERVALOS DE MEDIÇÃO E USO -------*/
+/*
+ Este valores são obtidos da datasheet do sensor de temperatura que está diretamente calibrado em graus.
+ O fator de conversão é 10 mV/Cº.
+ Exemplo: 
+ Cº          V         Bits
+ 0º -----> 0 mV
+ 10º ----> 100mV -----> 20
+ 40º ----> 400mV -----> 81
+
+
+*/
+int maxTemp = 81; // Bits para a tensão máxima de output do sensor de temperatura
+int minTemp = 20; // Bita para a tensão minima de output do sensor de temperatura
 
 int maxTemp = 40; // Endereço para tensão máxima de output do sensor de temperatura
 int minTemp = 10; // Endereço para tensão minima de output do sensor de temperatura
+
 
 int maxDegrees = 180; //Angulo máximo desejado para o servo motor
 int minDegrees = 0;  //Angulo minímo desejado para o servo motor
@@ -45,7 +61,7 @@ int delayTime = 15; //
 void setup() {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
-   myservo.attach(servoPin);  //Pin de ligação do servo a uma porta PWM. Porta 9
+  myservo.attach(servoPin);  //Pin de ligação do servo a uma porta PWM. Porta 9
   
 }
 
@@ -58,8 +74,27 @@ void loop() {
   Serial.println(valTemp);
   
   // scale it to use it with the servo (value between 0 and 180)
-  int val = map(valTemp, minTemp, maxTemp, minDegrees, maxDegrees); 
+
+ //fluxo de controlo para ajustar o servo motor
+  if(valTemp > minTemp && valTemp < maxTemp) {
+   //intervalo de medição pedido
+    val = map(valTemp, minTemp, maxTemp, minDegrees, maxDegrees);
+    
+  } else if (valTemp < minTemp){
+    //para valores de temperatura menores que a temperatura minia, o servo motor mantem o ponteiro em zero graus
+    val = 0;
+  } else{
+    //para valores de temperatura maiores que a temperatura máxima, o servo motor mantem o ponteiro em 180 graus
+    val = 180;
+  }
+
+  //Serial.println(val);
+  
+  Serial.println("--------------- \n");
+  
   myservo.write(val); // sets the servo position according to the scaled value
   delay(delayTime);   
+ 
+
 
 }
