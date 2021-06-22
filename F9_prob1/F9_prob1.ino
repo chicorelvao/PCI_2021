@@ -24,15 +24,15 @@ Servo myservo;  // create servo object to control a servo
 
 /*----- PORTAS -------*/
 int servoPin = 9; //Pin do servo
-int tempPin = A0;  // analog pin used to connect the potentiometer
+int tempPin = A0;  // analog pin used to connect o sensor de temperatura
 
 /*----- Valores medidos -------*/
 int valTemp = 0;    // variable to read the value from the analog pin
 
 /*----- LIMITES DOS INTERVALOS DE MEDIÇÃO E USO -------*/
 
-int maxTemp = 81; // Endereço para tensão máxima de output do sensor de temperatura
-int minTemp = 20; // Endereço para tensão minima de output do sensor de temperatura
+int maxTemp = 40; // Endereço para tensão máxima de output do sensor de temperatura
+int minTemp = 10; // Endereço para tensão minima de output do sensor de temperatura
 
 int maxDegrees = 180; //Angulo máximo desejado para o servo motor
 int minDegrees = 0;  //Angulo minímo desejado para o servo motor
