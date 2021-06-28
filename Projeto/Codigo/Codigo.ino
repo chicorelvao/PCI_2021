@@ -1,3 +1,5 @@
+
+
 /*
  * Projeto de PCI 2021 - PL2 - Grupo 2
  * Implementação de uma máquina lavar.
@@ -8,6 +10,7 @@
 #include <Stepper.h>
 #include <LiquidCrystal_74HC595.h>
 
+#include <IRremote.h>
 
 
 
@@ -36,11 +39,11 @@ int buttonPin;
 int buzzPin;
 
 //Pins de conexão com os LEDs
-int greenLed;
+int greenLed = 4;
 //o power led é vermelho
-int powerLed;
-int redLed;
-int blueLed;
+int powerLed = 5;
+int redLed = 6;
+int blueLed = 7;
 
 /*
  * Pins de conexão com o LCD, que vai ser utilizado com o
@@ -63,6 +66,15 @@ int dataPinFour = 4;    //Data Pin 4      ----> 4 - Q4 - parallel data output
 int dataPinFive = 5;    //Data Pin 5      ----> 5 - Q5 - parallel data output
 int dataPinSix = 6;     //Data Pin 6      ----> 6 - Q6 - parallel data output
 int dataPinSeven = 7;   //Data Pin 7      ----> 7 - Q7 - parallel data output
+
+
+
+/*----------------------------------------------
+ * ------------Variáveis adicionais-------------
+ * ---------------------------------------------
+ */
+ //Guarda o estado do butão para ligar e desligar a máquina
+boolean buttonOnState = false;
 
 /*----------------------------------------------
  * --------Definições do motor de passo---------
@@ -88,7 +100,7 @@ Stepper myStepper(stepsPerRevolution, inFourM, inThreeM, inTwoM, inOneM);
 //https://playground.arduino.cc/Main/LiquidCrystal/
 
 
-LiquidCrystal_74HC595 lcd(dataPin, clockPin,latchPin, registerSelect, enablePin, dataPinFour,dataPinFive, dataPinSix, dataPinSeven);
+LiquidCrystal_74HC595 lcd(dataPin, clockPin,latchPin, registerSelect, enableLCD, dataPinFour,dataPinFive, dataPinSix, dataPinSeven);
 
 
 
@@ -98,8 +110,7 @@ LiquidCrystal_74HC595 lcd(dataPin, clockPin,latchPin, registerSelect, enablePin,
  */
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
-  lcd.begin(20, 4);
+
 
   //definição do pin digital para cada led
   pinMode(greenLed, OUTPUT);
@@ -107,14 +118,38 @@ void setup() {
   pinMode(redLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
   //definição do pin digital do butão de input variado
-  pinMode(buttoPin, INPUT);
+  pinMode(buttonPin, INPUT);
  //definição do pin digital do buzzer passivo
   pinMode(buzzPin, OUTPUT);
+
+  lcd.begin(16, 2);
+  lcd.print("Bem Vindo!");
+  delay(1000);
+  lcd.clear();
   
 }
 
 
 void loop() {
   // put your main code here, to run repeatedly:
+  
+  
+
+  lcd.setCursor(0, 0);
+  lcd.print("Menu       Menu     Menu     Menu  Menu ");
+  lcd.print("1-Lavagens  2-Cenfriguar 3-Torcer   4-EN");
+  delay(500);
+  lcd.scrollDisplayLeft();
+  delay(100);
+
+
+  
+  /*
+  lcd.print("Menu:");
+  lcd.setCursor(0, 1);
+  lcd.print("2-Lavagens");
+  delay(1000);
+    lcd.clear();
+*/
   
 }
