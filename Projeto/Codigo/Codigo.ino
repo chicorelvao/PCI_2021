@@ -31,7 +31,7 @@ int inThreeM = 9;
 int inFourM = 8;
 
 // Pin do sensor de IR
-int pin = 7;
+int pin = 3;
 IRrecv irrecv(pin);
 decode_results results;
 
@@ -118,6 +118,11 @@ int sensorReading = 0;
 int minSpeed;
 int maxSpeed;
 
+// Tempo do ciclo de lavagem
+int timeCounter;
+int timeMax;
+boolean timeCheck = false;
+
 /*-----------------------------------
  * --------Definições do LCD---------
  * ----------------------------------
@@ -150,9 +155,10 @@ void setup() {
 
   // Inicialização do LCD
   lcd.begin(16, 2);
-  lcd.print("Bem Vindo!");
-  delay(1000);
-  lcd.clear();
+
+  // Velocidade inicial do motor (MAX 100)
+  // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
+  myStepper.setSpeed(64);
   
 }
 
@@ -171,11 +177,64 @@ boolean productIn (int comandOption, boolean product){
   return product;
 }
 
-void motorStep (){
+// Centrifugação - Torcer
+void motorStepMovs (int speedRot){
 
-
-
+  //Gira o eixo do motor no sentido horario - 120 graus
+ for (int i = 0; i<=3; i++)
+ {
+ myStepper.step(-speedRot); 
+ }
+ 
+ //Gira o eixo do motor no sentido anti-horario - 120 graus
+ for (int i = 0; i<=2; i++)
+ {
+ myStepper.step(speedRot); 
+ }
+ 
+ //Gira o eixo do motor no sentido horario, aumentando a
+ //velocidade gradativamente
+ /*for (int i = 10; i<=60; i=i+10)
+ {
+ myStepper.setSpeed(i);
+ myStepper.step(40*i);
+ }
+ delay(50);
+ */
 }
+
+// Funçao que descreve um programa
+// timeMax: 1min <=> 1seg (para fins demonstrativos)
+
+void progMach (int timeMax, int speedMov){
+  
+  product = productIn (comandOption, product);
+  // Enquanto o detergente não for introduzido
+  while (product == false)
+  {
+    digitalWrite (redLed, HIGH); // Sinaliza que o ciclo de lavagem não pode ser iniciado
+    lcd.clear();
+    messageLCD("Wainting...", 0,0)
+    product = productIn (comandOption, product);               
+  }
+                
+  digitalWrite (redLed, LOW); 
+  digitalWrite (greenLed, HIGH); // Sinaliza que se pode iniciar o ciclo de lavagem
+  digitalWrite (blueLed, HIGH); // Indica que o produto para a lavagem foi introduzido
+                
+  lcd.clear();
+  messageLCD("Lets Start!", 0,0)
+                
+  while (timeCheck == false)
+  {
+    motorStepMovs (speedMov);
+    timeCounter++;
+    if(timeCounter = timeMax){
+      timeCheck == true;
+    }
+  }
+}
+
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -208,22 +267,18 @@ void loop() {
               
               switch (comandOption){
                 
-                // Rápido (30 min)
+                // Rápido (30 min) - tecla 1
                 case 0xFF30CF:
-                product = productIn (comandOption, product);
-                if(product == true){
+                  progMach (30, 682);
+               
+                break;
+
+                // Rápido ( Temperatuta e velocidade ajustável ) - tecla 2
+                case 0xFF18E7: 
+                  // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
+                  // FALTA: definir variavel num
                   
-                }
-              
-              }
-           break;
-        
-          case 0xFF18E7: 
-            cont1++;  
-            Serial.println(" 2              ");
-            num = updateNum(2);
-            Serial.println(num);
-            break;
+                break;
         
           case 0xFF7A85: 
             cont1++; 
