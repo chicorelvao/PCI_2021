@@ -8,8 +8,6 @@
 #include <Stepper.h>
 #include <LiquidCrystal_74HC595.h>
 #include <IRremote.h>
-#include "SevSeg.h"
-SevSeg sevseg; 
 
 
 
@@ -41,6 +39,10 @@ boolean reciveIR = irrecv.decode(&results);
 
 //Tecla do comando selecionada
 int comandOption = results.value;
+int num; // numero final comando
+int temperature;
+int rotations;
+int tempoFuncionamento;
 
 //Boolean que indica se o produto(s) para a lavagem já foram introduzidos
 boolean product = false;
@@ -112,11 +114,7 @@ int stepCount = 0;  // number of steps the motor has taken
 int motorSpeed = 0;
 int halfPotentiometer = 511; //ponto médio do potenciometrio
 int sensorReading = 0;
-
-//Velocidades minimas e máximas obtidas empiricamente
-//O motor nao roda para outras velocidade em 64 passos por rotação completa
-int minSpeed;
-int maxSpeed;
+int speedI = 64;
 
 // Tempo do ciclo de lavagem
 int timeCounter;
@@ -158,9 +156,14 @@ void setup() {
 
   // Velocidade inicial do motor (MAX 100)
   // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
-  myStepper.setSpeed(64);
+  myStepper.setSpeed(speedI);
   
 }
+
+/*--------------------------------------------
+ * ---------------- Funções ------------------
+ * -------------------------------------------
+ */
 
 void messageLCD (string message, colsLCD, rowLCD){
   lcd.setCursor(colsLCD, rowLCD);
@@ -178,23 +181,23 @@ boolean productIn (int comandOption, boolean product){
 }
 
 // Centrifugação - Torcer
-void motorStepMovs (int speedRot){
-
-  //Gira o eixo do motor no sentido horario - 120 graus
+void motorStepMovs (int v, int t){
+ int steps = v*t;
+ //Gira o eixo do motor no sentido horario - 120 graus
  for (int i = 0; i<=3; i++)
  {
- myStepper.step(-speedRot); 
+ myStepper.step(-steps); 
  }
  
  //Gira o eixo do motor no sentido anti-horario - 120 graus
  for (int i = 0; i<=2; i++)
  {
- myStepper.step(speedRot); 
+ myStepper.step(steps); 
  }
  
- //Gira o eixo do motor no sentido horario, aumentando a
+ /*//Gira o eixo do motor no sentido horario, aumentando a
  //velocidade gradativamente
- /*for (int i = 10; i<=60; i=i+10)
+ for (int i = 10; i<=60; i=i+10)
  {
  myStepper.setSpeed(i);
  myStepper.step(40*i);
@@ -206,7 +209,7 @@ void motorStepMovs (int speedRot){
 // Funçao que descreve um programa
 // timeMax: 1min <=> 1seg (para fins demonstrativos)
 
-void progMach (int timeMax, int speedMov){
+void progMachine (int timeMax, int speedMov){
   
   product = productIn (comandOption, product);
   // Enquanto o detergente não for introduzido
@@ -233,6 +236,150 @@ void progMach (int timeMax, int speedMov){
       timeCheck == true;
     }
   }
+}
+
+// Ciclo de Lavagem: Lavagem -> Enxaguamento -> Centrifugação -> Descarga
+// Lavagem 
+void lavagem (int timeMax, int speedMov){
+  
+}
+
+
+
+
+
+
+// Selecionar um número no comando para a temperatura e velocidade
+// NOTA: Colocar a referencia a este código - baseado no programa do problema 3 da Ficha 9!!
+int comandNumber (){
+  if (reciveIR)
+  {
+    cont1 = 0;
+    
+    while(comandOption != 0xFFC23D)
+    {
+      if (reciveIR)
+      {      
+        switch(comandOption)
+        {  
+          case 0xFF6897:
+            cont1++;
+            num = updateNum(0);
+            lcd.clear();
+            messageLCD("0",8,0);
+            break;
+         
+          case 0xFF30CF:  
+            cont1++;
+            num = updateNum(1);
+            lcd.clear();
+            messageLCD("1",8,0);
+            break;
+        
+          case 0xFF18E7: 
+            cont1++;  
+            num = updateNum(2);
+            lcd.clear();
+            messageLCD("2",8,0);
+            break;
+        
+          case 0xFF7A85: 
+            cont1++;  
+            num = updateNum(3);
+            lcd.clear();
+            messageLCD("3",8,0);
+            break;
+            
+          case 0xFF10EF:
+            cont1++;  
+            num = updateNum(4);
+            lcd.clear();
+            messageLCD("4",8,0);
+            break;
+        
+          case 0xFF38C7:  
+            cont1++;  
+            num = updateNum(5);
+            lcd.clear();
+            messageLCD("5",8,0);
+            break;
+        
+          case 0xFF5AA5: 
+            cont1++;  
+            num = updateNum(6);
+            lcd.clear();
+            messageLCD("6",8,0);
+            break;
+        
+          case 0xFF42BD:
+            cont1++;  
+            num = updateNum(7);
+            lcd.clear();
+            messageLCD("7",8,0);
+            break;
+        
+          case 0xFF4AB5: 
+            cont1++;  
+            num = updateNum(8);
+            lcd.clear();
+            messageLCD("8",8,0);
+            break;
+        
+          case 0xFF52AD: 
+            cont1++;  
+            num = updateNum(9);
+            lcd.clear();
+            messageLCD("9",8,0);
+            break;
+        
+          default:
+            lcd.clear();
+            messageLCD(" unknown button   ",8,0);
+        }
+
+        if (cont1 == 4)
+        {
+          cont1 = 0;
+        }
+        
+        irrecv.resume();
+      }
+      
+    }
+    irrecv.resume(); // Recebe o valor a seguir
+  } 
+  return num;    
+}
+
+
+// atualiza o número a ser mostrado no display,
+// após cada clique nos botões de 0-9 do comando
+int updateNum(int digit)
+{ 
+  switch (cont1)
+  {
+    case 1:
+    oneDig = digit;
+    tempNum = oneDig;
+    break;
+    
+    case 2:
+    twoDig = 10 * oneDig + digit;
+    tempNum = twoDig;
+    break;
+    
+    case 3:
+    threeDig = 10 * twoDig + digit;
+    tempNum = threeDig;
+    break;
+
+    case 4:
+    fourDig = 10 * threeDig + digit;
+    tempNum = fourDig;
+    break;
+  }
+
+  return tempNum;
 }
 
 
@@ -262,21 +409,41 @@ void loop() {
            case 0xFF30CF:  
               lcd.clear();
               messageLCD("Rápidos       Rápidos     Rápidos     Rápidos  Rápidos ",0,0);
-              messageLCD("1-Rápido (P.def) 2-Rápido ()",0,0);
+              messageLCD("1-Rápido (Pre.def) 2-Rápido ()",0,0);
               
               
               switch (comandOption){
                 
                 // Rápido (30 min) - tecla 1
                 case 0xFF30CF:
-                  progMach (30, 682);
+                  progMachine (30, 682);
+                  // FALTA a opção de pausa com o comando
                
                 break;
 
                 // Rápido ( Temperatuta e velocidade ajustável ) - tecla 2
                 case 0xFF18E7: 
                   // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
-                  // FALTA: definir variavel num
+                  // FALTA: a funcao PAUSE
+                  // FALTA: condição pra dar erro se a temperatura e velocidades colocadas estiverem fora do intervalo (a ser definido de acordo com a datasheet:
+                  lcd.clear();
+                  messageLCD("Temperatura (entre 20º-60º): ",0,0); 
+                  comandNumber();
+                  temperature = comandNumber ();
+
+                  lcd.clear();
+                  // FALTA: ver intervalos de velocidade e como relacionar isso para cada programa
+                  messageLCD("Velocidade (entre - ): ",0,0); 
+                  comandNumber();
+                  rotations = comandNumber ();
+
+                  lcd.clear();
+                  // Admitindo 10-200
+                  messageLCD("Tempo (entre 10-200 min): ",0,0); 
+                  comandNumber();
+                  tempo = comandNumber ();
+
+                  progMachine (tempo, 682);
                   
                 break;
         
@@ -334,7 +501,7 @@ void loop() {
             Serial.println(results.value, HEX);
         }
       }
-      
+      irrecv.resume(); // Recebe o valor a seguir
     }
 
   }
