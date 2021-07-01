@@ -35,7 +35,7 @@ decode_results results;
 
 //Boolean que indica se um código IR foi recebido (true) ou não (false)
 //https://www.pjrc.com/teensy/td_libs_IRremote.html
-boolean reciveIR = irrecv.decode(&results);
+boolean recieveIR = irrecv.decode(&results);
 
 //Tecla do comando selecionada
 int comandOption = results.value;
@@ -165,7 +165,7 @@ void setup() {
  * -------------------------------------------
  */
 
-void messageLCD (string message, colsLCD, rowLCD){
+void messageLCD (String message,  int colsLCD, int rowLCD){
   lcd.setCursor(colsLCD, rowLCD);
   lcd.print(message);
 }
@@ -397,7 +397,12 @@ void loop() {
     messageLCD("Menu       Menu     Menu     Menu  Menu ",0,0); 
     messageLCD("Programas: 1-Rápidos  2-Delicados  3-Algodões  4-Sintéticos",0,1);
     delay(500);
+    for (int positionCounter = 0; positionCounter < 13; positionCounter++) {
+    // scroll one position left:
     lcd.scrollDisplayLeft();
+    // wait a bit:
+    delay(150);
+  }
     delay(100);
    
     if (reciveIR)
