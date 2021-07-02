@@ -35,11 +35,11 @@ decode_results results;
 
 //Boolean que indica se um código IR foi recebido (true) ou não (false)
 //https://www.pjrc.com/teensy/td_libs_IRremote.html
-boolean recieveIR = irrecv.decode(&results);
+boolean receiveIR = irrecv.decode(&results);
 
 //Tecla do comando selecionada
 int comandOption = results.value;
-int num; // numero final comando
+long num; // numero final comando
 int temperature;
 int rotations;
 int tempoFuncionamento;
@@ -52,7 +52,6 @@ boolean product = false;
 int buttonPin;
 
 //Pin do buzzer
-// https://www.arduino.cc/reference/en/language/functions/advanced-io/tone/
 int buzzPin;
 
 //Pins de conexão com os LEDs
@@ -92,7 +91,16 @@ int dataPinSeven = 7;   //Data Pin 7      ----> 7 - Q7 - parallel data output
  * ---------------------------------------------
  */
  //Guarda o estado do butão para ligar e desligar a máquina
-boolean buttonOnState = false;
+boolean buttonOnState = true;
+ //Conta o número de dígitos inseridos pelo utilizador no LCD
+int cont1;
+ //Variáveis envolvidas na atualização do número final no comando
+int tempNum;
+int oneDig;
+int twoDig;
+int threeDig;
+int fourDig;
+
 
 /*----------------------------------------------
  * --------Definições do motor de passo---------
@@ -165,160 +173,6 @@ void setup() {
  * ---------------- Funções ------------------
  * -------------------------------------------
  */
- 
-//https://gist.github.com/nicksort/4736535
-void musicBuzzer(){
-  
-  const int c = 261;
-  const int d = 294;
-  const int e = 329;
-  const int f = 349;
-  const int g = 391;
-  const int gS = 415;
-  const int a = 440;
-  const int aS = 455;
-  const int b = 466;
-  const int cH = 523;
-  const int cSH = 554;
-  const int dH = 587;
-  const int dSH = 622;
-  const int eH = 659;
-  const int fH = 698;
-  const int fSH = 740;
-  const int gH = 784;
-  const int gSH = 830;
-  const int aH = 880;
-   
-  const int buzzerPin = 8;
-  const int ledPin1 = 12;
-  const int ledPin2 = 13;
-   
-  int counter = 0;
-   
-  void setup()
-  {
-    //Setup pin modes
-    pinMode(buzzerPin, OUTPUT);
-    pinMode(ledPin1, OUTPUT);
-    pinMode(ledPin2, OUTPUT);
-  }
-   
-  void loop()
-  {
-   
-    //Play first section
-    firstSection();
-   
-    //Play second section
-    secondSection();
-   
-    beep(f, 250);  
-    beep(gS, 500);  
-    beep(f, 350);  
-    beep(a, 125);
-    beep(cH, 500);
-    beep(a, 375);  
-    beep(cH, 125);
-    beep(eH, 650);
-   
-    delay(500);
-   
-    //Repeat second section
-    secondSection();
-   
-  
-    beep(f, 250);  
-    beep(gS, 500);  
-    beep(f, 375);  
-    beep(cH, 125);
-    beep(a, 500);  
-    beep(f, 375);  
-    beep(cH, 125);
-    beep(a, 650);  
-   
-    delay(650);
-  }
-   
-  void beep(int note, int duration)
-  {
-    //Play tone on buzzerPin
-    tone(buzzerPin, note, duration);
-   
-    //Play different LED depending on value of 'counter'
-    if(counter % 2 == 0)
-    {
-      digitalWrite(ledPin1, HIGH);
-      delay(duration);
-      digitalWrite(ledPin1, LOW);
-    }else
-    {
-      digitalWrite(ledPin2, HIGH);
-      delay(duration);
-      digitalWrite(ledPin2, LOW);
-    }
-   
-    //Stop tone on buzzerPin
-    noTone(buzzerPin);
-   
-    delay(50);
-   
-    //Increment counter
-    counter++;
-  }
-   
-  void firstSection()
-  {
-    beep(a, 500);
-    beep(a, 500);    
-    beep(a, 500);
-    beep(f, 350);
-    beep(cH, 150);  
-    beep(a, 500);
-    beep(f, 350);
-    beep(cH, 150);
-    beep(a, 650);
-   
-    delay(500);
-   
-    beep(eH, 500);
-    beep(eH, 500);
-    beep(eH, 500);  
-    beep(fH, 350);
-    beep(cH, 150);
-    beep(gS, 500);
-    beep(f, 350);
-    beep(cH, 150);
-    beep(a, 650);
-   
-    delay(500);
-  }
-   
-  void secondSection()
-  {
-    beep(aH, 500);
-    beep(a, 300);
-    beep(a, 150);
-    beep(aH, 500);
-    beep(gSH, 325);
-    beep(gH, 175);
-    beep(fSH, 125);
-    beep(fH, 125);    
-    beep(fSH, 250);
-   
-    delay(325);
-   
-    beep(aS, 250);
-    beep(dSH, 500);
-    beep(dH, 325);  
-    beep(cSH, 175);  
-    beep(cH, 125);  
-    beep(b, 125);  
-    beep(cH, 250);  
-   
-    delay(350);
-  }
-}
- 
 
 void messageLCD (String message,  int colsLCD, int rowLCD){
   lcd.setCursor(colsLCD, rowLCD);
@@ -372,7 +226,7 @@ void progMachine (int timeMax, int speedMov){
   {
     digitalWrite (redLed, HIGH); // Sinaliza que o ciclo de lavagem não pode ser iniciado
     lcd.clear();
-    messageLCD("Wainting...", 0,0)
+    messageLCD("Wainting...", 0,0);
     product = productIn (comandOption, product);               
   }
                 
@@ -381,11 +235,11 @@ void progMachine (int timeMax, int speedMov){
   digitalWrite (blueLed, HIGH); // Indica que o produto para a lavagem foi introduzido
                 
   lcd.clear();
-  messageLCD("Lets Start!", 0,0)
+  messageLCD("Lets Start!", 0,0);
                 
   while (timeCheck == false)
   {
-    motorStepMovs (speedMov);
+    motorStepMovs (speedMov, timeMax);
     timeCounter++;
     if(timeCounter = timeMax){
       timeCheck == true;
@@ -399,21 +253,44 @@ void lavagem (int timeMax, int speedMov){
   
 }
 
+// atualiza o número a ser mostrado no display,
+// após cada clique nos botões de 0-9 do comando
+long updateNum(int digit)
+{ 
+  switch (cont1)
+  {
+    case 1:
+    oneDig = digit;
+    tempNum = oneDig;
+    break;
+    
+    case 2:
+    twoDig = 10 * oneDig + digit;
+    tempNum = twoDig;
+    break;
+    
+    case 3:
+    threeDig = 10 * twoDig + digit;
+    tempNum = threeDig;
+    break;
 
+    case 4:
+    fourDig = 10 * threeDig + digit;
+    tempNum = fourDig;
+    break;
+  }
 
-
-
+  return tempNum;
+}
 
 // Selecionar um número no comando para a temperatura e velocidade
 // NOTA: Colocar a referencia a este código - baseado no programa do problema 3 da Ficha 9!!
 int comandNumber (){
-  if (reciveIR)
-  {
     cont1 = 0;
     
     while(comandOption != 0xFFC23D)
     {
-      if (reciveIR)
+      if (receiveIR)
       {      
         switch(comandOption)
         {  
@@ -499,113 +376,94 @@ int comandNumber (){
         
         irrecv.resume();
       }
-      
     }
-    irrecv.resume(); // Recebe o valor a seguir
-  } 
+    
   return num;    
 }
-
-
-// atualiza o número a ser mostrado no display,
-// após cada clique nos botões de 0-9 do comando
-int updateNum(int digit)
-{ 
-  switch (cont1)
-  {
-    case 1:
-    oneDig = digit;
-    tempNum = oneDig;
-    break;
-    
-    case 2:
-    twoDig = 10 * oneDig + digit;
-    tempNum = twoDig;
-    break;
-    
-    case 3:
-    threeDig = 10 * twoDig + digit;
-    tempNum = threeDig;
-    break;
-
-    case 4:
-    fourDig = 10 * threeDig + digit;
-    tempNum = fourDig;
-    break;
-  }
-
-  return tempNum;
-}
-
 
 void loop() {
   // put your main code here, to run repeatedly:
   //buttonOnState = checkButton();
+  lcd.clear();
   while (buttonOnState == true){
-    
     // Mensagem de inicio da máquina
-    messageLCD("Bem Vindo!",0,1);
+    messageLCD("Bem Vindo!",3,0);
+    delay(2000);
+    lcd.clear();
+  
+    // Apresentação do menu principal e respetivas opções
+    messageLCD("Menu",5,0); 
+    delay(2000);
+    lcd.clear();
+    
+    messageLCD("  Programas   Programas  ", 0, 0);
+    messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
+    // delay no início da apresentação
+    delay(750);
+    for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
+       // scroll one position left:
+      lcd.scrollDisplayLeft();
+      // wait a bit:
+      delay(750);
+    }
+
+    lcd.clear();
+    // delay na transição entre a apresentação dos programas
     delay(500);
+    
+    messageLCD("  Programas   Programas  ", 0, 0);
+    messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
+    // delay no início da apresentação
+    delay(750);
+    for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
+      // scroll one position left:
+      lcd.scrollDisplayLeft();
+      // wait a bit:
+      delay(750);
+    }
+
     lcd.clear();
 
-    // Apresentação do menu principal e respetivas opções
-    messageLCD("Menu       Menu     Menu     Menu  Menu ",0,0); 
-    messageLCD("Programas: 1-Rápidos  2-Delicados  3-Algodões  4-Sintéticos",0,1);
-    delay(500);
-    for (int positionCounter = 0; positionCounter < 13; positionCounter++) {
-    // scroll one position left:
-    lcd.scrollDisplayLeft();
-    // wait a bit:
-    delay(150);
-  }
-    delay(100);
-   
-    if (reciveIR)
+    messageLCD("Selecione o programa desejado:", 0, 0);
+    for (int positionCounter = 0; positionCounter < 14; positionCounter++) {
+      // scroll one position left:
+      lcd.scrollDisplayLeft();
+      // wait a bit: (delay rápido para testar rapidamente)
+      delay(100);
+    }
+
+    cont1 = 0;
+    
+    while(comandOption != 0xFFC23D)
     {
-      
-      switch (comandOption){
+      if (receiveIR)
+      {      
+        switch(comandOption)
+        {
+          case 0xFFC23D:  
+            Serial.println(" PLAY/PAUSE     "); 
+            break;
+            
+          case 0xFF6897:
+            cont1++;
+            Serial.println(" 0              ");
+            num = updateNum(0);
+            Serial.println(num);
+            break;
         
-           // Opção - Rápidos    
-           case 0xFF30CF:  
-              lcd.clear();
-              messageLCD("Rápidos       Rápidos     Rápidos     Rápidos  Rápidos ",0,0);
-              messageLCD("1-Rápido (Pre.def) 2-Rápido ()",0,0);
-              
-              
-              switch (comandOption){
-                
-                // Rápido (30 min) - tecla 1
-                case 0xFF30CF:
-                  progMachine (30, 682);
-                  // FALTA a opção de pausa com o comando
-               
-                break;
-
-                // Rápido ( Temperatuta e velocidade ajustável ) - tecla 2
-                case 0xFF18E7: 
-                  // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
-                  // FALTA: a funcao PAUSE
-                  // FALTA: condição pra dar erro se a temperatura e velocidades colocadas estiverem fora do intervalo (a ser definido de acordo com a datasheet:
-                  lcd.clear();
-                  messageLCD("Temperatura (entre 20º-60º): ",0,0); 
-                  comandNumber();
-                  temperature = comandNumber ();
-
-                  lcd.clear();
-                  // FALTA: ver intervalos de velocidade e como relacionar isso para cada programa
-                  messageLCD("Velocidade (entre - ): ",0,0); 
-                  comandNumber();
-                  rotations = comandNumber ();
-
-                  lcd.clear();
-                  // Admitindo 10-200
-                  messageLCD("Tempo (entre 10-200 min): ",0,0); 
-                  comandNumber();
-                  tempo = comandNumber ();
-
-                  progMachine (tempo, 682);
-                  
-                break;
+          case 0xFF30CF:  
+            cont1++;
+            Serial.println(" 1              ");
+            num = updateNum(1);
+            Serial.println(num);
+            break;
+        
+          case 0xFF18E7: 
+            cont1++;  
+            Serial.println(" 2              ");
+            num = updateNum(2);
+            Serial.println(num);
+            break;
         
           case 0xFF7A85: 
             cont1++; 
@@ -660,23 +518,122 @@ void loop() {
             Serial.print(" unknown button   ");
             Serial.println(results.value, HEX);
         }
+  
+        if (cont1 == 4)
+        {
+          cont1 = 0;
+        }
+        
+        irrecv.resume();
       }
-      irrecv.resume(); // Recebe o valor a seguir
     }
 
-  }
+    lcd.clear();
+    messageLCD(String(num), 0, 1);
+    delay(1000);
+    
+    lcd.clear();
+    delay(1000);
+    /*
+    switch (num)
+    { 
+      // Opção- Rápidos    
+      case 0xFF30CF:  
+        lcd.clear();
+        messageLCD("Rápidos       Rápidos     Rápidos     Rápidos  Rápidos ",0,0);
+        messageLCD("1-Rápido (Pre.def) 2-Rápido ()",0,0);
+  
+        cont1 = 0;
+        
+        while(comandOption != 0xFFC23D)
+        {
+          if (receiveIR)
+          {
+            switch (comandOption)
+            {
+              case 0xFFC23D:  
+              Serial.println(" PLAY/PAUSE     "); 
+              break;
+              
+              // Rápido (30 min) - tecla 1
+              case 0xFF30CF:
+                progMachine (30, 682);
+                // FALTA a opção de pausa com o comando
+             
+              break;
+        
+              // Rápido ( Temperatuta e velocidade ajustável ) - tecla 2
+              case 0xFF18E7: 
+                // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
+                // FALTA: a funcao PAUSE
+                // FALTA: condição pra dar erro se a temperatura e velocidades colocadas estiverem fora do intervalo (a ser definido de acordo com a datasheet:
+                lcd.clear();
+                messageLCD("Temperatura (entre 20º-60º): ",0,0); 
+                comandNumber();
+                temperature = comandNumber ();
+        
+                lcd.clear();
+                // FALTA: ver intervalos de velocidade e como relacionar isso para cada programa
+                messageLCD("Velocidade (entre - ): ",0,0); 
+                comandNumber();
+                rotations = comandNumber ();
+        
+                lcd.clear();
+                // Admitindo 10-200
+                messageLCD("Tempo (entre 10-200 min): ",0,0); 
+                comandNumber();
+                tempoFuncionamento = comandNumber ();
+        
+                progMachine (tempoFuncionamento, 682);
+  
+                break;
+            }
+     
+            if (cont1 == 4)
+            {
+              cont1 = 0;
+            }
+            
+            irrecv.resume();
+          }
+        }
+        break;
 
+      // Opção- Delicados 
+      case 0xFF18E7: 
+         cont1++;  
+        Serial.println(" 2              ");
+        num = updateNum(2);
+        Serial.println(num);
+        break;
 
+      // Opção- Algodões
+      case 0xFF7A85: 
+          cont1++; 
+          Serial.println(" 3              ");
+          num = updateNum(3);
+          Serial.println(num);
+          break;
 
-
+      // Opção- Sintéticos
+      case 0xFF10EF:
+          cont1++;   
+          Serial.println(" 4              ");
+          num = updateNum(4);
+          Serial.println(num);
+          break;
+      
+      default:
+        Serial.print(" unknown button   ");
+        Serial.println(results.value, HEX);
+    }
+    
   lcd.setCursor(0, 0);
   lcd.print("Menu       Menu     Menu     Menu  Menu ");
   lcd.print("1-Lavagens  2-Cenfriguar 3-Torcer   4-EN");
   delay(500);
   lcd.scrollDisplayLeft();
   delay(100);
-
-
   
   /*
   lcd.print("Menu:");
@@ -685,5 +642,5 @@ void loop() {
   delay(1000);
     lcd.clear();
 */
-  
+  }
 }
