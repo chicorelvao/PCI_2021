@@ -47,9 +47,10 @@ int fourDig;
 
 boolean buttonOnState = true;
 
-int Li = 16;
-
-int Lii = 0;
+void messageLCD (String message,  int colsLCD, int rowLCD){
+  lcd.setCursor(colsLCD, rowLCD);
+  lcd.print(message);
+}
 
 // atualiza o número a ser mostrado no display,
 // após cada clique nos botões de 0-9 do comando
@@ -261,40 +262,146 @@ void loop() {
     messageLCD("Menu",5,0); 
     delay(2000);
     lcd.clear();
-    messageLCD("Programas: 1-Rapidos  2-Delicados  3-Algodoes  4-Sinteticos",0,0); 
-    for (int positionCounter = 0; positionCounter < 16; positionCounter++) {
-    // scroll one position left:
-    lcd.scrollDisplayLeft();
-    // wait a bit:
-    delay(150);
+    
+    messageLCD("  Programas   Programas  ", 0, 0);
+    messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
+    // delay no início da apresentação
+    delay(750);
+    for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
+       // scroll one position left:
+      lcd.scrollDisplayLeft();
+      // wait a bit: (delay rápido para testar rapidamente)
+      delay(100);
     }
-    /*
-    for (int i = 0; i < 10; i++){
-    lcd.print(Scroll_LCD_Left("Programas: 1-Rapidos  2-Delicados  3-Algodoes  4-Sinteticos"));
-    delay(1000);
-    }
-    */
-    delay(5000);
+
     lcd.clear();
+    // delay na transição entre a apresentação dos programas
+    delay(500);
+    
+    messageLCD("  Programas   Programas  ", 0, 0);
+    messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
+    // delay no início da apresentação
+    delay(750);
+    for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
+      // scroll one position left:
+      lcd.scrollDisplayLeft();
+      // wait a bit: (delay rápido para testar rapidamente)
+      delay(100);
+    }
+    
+    lcd.clear();
+
+    messageLCD("Selecione o programa desejado:", 0, 0);
+    for (int positionCounter = 0; positionCounter < 14; positionCounter++) {
+      // scroll one position left:
+      lcd.scrollDisplayLeft();
+      // wait a bit: (delay rápido para testar rapidamente)
+      delay(100);
+    }
+
+    cont1 = 0;
+
+    results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
+        
+    while(results.value != 0xFFC23D)
+    {
+      if (irrecv.decode(&results))
+      {      
+        switch(results.value)
+        {
+          case 0xFFC23D:  
+            Serial.println(" PLAY/PAUSE     "); 
+            break;
+            
+          case 0xFF6897:
+            cont1++;
+            Serial.println(" 0              ");
+            num = updateNum(0);
+            Serial.println(num);
+            break;
+        
+          case 0xFF30CF:  
+            cont1++;
+            Serial.println(" 1              ");
+            num = updateNum(1);
+            Serial.println(num);
+            break;
+        
+          case 0xFF18E7: 
+            cont1++;  
+            Serial.println(" 2              ");
+            num = updateNum(2);
+            Serial.println(num);
+            break;
+        
+          case 0xFF7A85: 
+            cont1++; 
+            Serial.println(" 3              ");
+            num = updateNum(3);
+            Serial.println(num);
+            break;
+            
+          case 0xFF10EF:
+            cont1++;   
+            Serial.println(" 4              ");
+            num = updateNum(4);
+            Serial.println(num);
+            break;
+        
+          case 0xFF38C7:  
+            cont1++; 
+            Serial.println(" 5              ");
+            num = updateNum(5);
+            Serial.println(num);
+            break;
+        
+          case 0xFF5AA5: 
+            cont1++; 
+            Serial.println(" 6              ");
+            num = updateNum(6);
+            Serial.println(num);
+            break;
+        
+          case 0xFF42BD:
+            cont1++;    
+            Serial.println(" 7              ");
+            num = updateNum(7);
+            Serial.println(num);
+            break;
+        
+          case 0xFF4AB5: 
+            cont1++;   
+            Serial.println(" 8              ");
+            num = updateNum(8);
+            Serial.println(num);
+            break;
+        
+          case 0xFF52AD: 
+            cont1++;   
+            Serial.println(" 9              ");
+            num = updateNum(9);
+            Serial.println(num);
+            break;
+        
+          default:
+            Serial.print(" unknown button   ");
+            Serial.println(results.value, HEX);
+        }
+  
+        if (cont1 == 4)
+        {
+          cont1 = 0;
+        }
+        
+        irrecv.resume();
+      }
+    }
+
+    lcd.clear();
+    messageLCD(String(num), 0, 1);
+    delay(1000);
+    
+    lcd.clear();
+    delay(1000);
   }  
 }
-
-void messageLCD (String message,  int colsLCD, int rowLCD){
-  lcd.setCursor(colsLCD, rowLCD);
-  lcd.print(message);
-}
-/*
-String Scroll_LCD_Left(String StrDisplay){
-  String result;
-  String StrProcess = "            " + StrDisplay + "           ";
-  result = StrProcess.substring(Li, Lii);
-  Li++;
-  Lii++;
-  if (Li > StrProcess.length()){
-    Li = 16;
-    Lii = 0;
-  }
-  
-  return result;
-}
-*/
