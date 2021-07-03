@@ -29,8 +29,8 @@ int inThreeM = 9;
 int inFourM = 8;
 
 // Pin do sensor de IR
-int pin = 3;
-IRrecv irrecv(pin);
+int IRPin = 6;
+IRrecv irrecv(IRPin);
 decode_results results;
 
 //Boolean que indica se um código IR foi recebido (true) ou não (false)
@@ -72,9 +72,9 @@ int blueLed = 7;
  */
  
 //Pinos do shift register para o arduino: ArduinoPin ---> registerPin
-int clockPin = 2; // D2 ----> 11 SH_CP - shift register clock input
-int dataPin = 1;  // D1 ----> 14 DS - serial data input
-int latchPin = 0; // D0 ----> 12 ST_CP - storage register clock input
+int clockPin = 5; // D2 ----> 11 SH_CP - shift register clock input
+int dataPin = 4;  // D1 ----> 14 DS - serial data input
+int latchPin = 3; // D0 ----> 12 ST_CP - storage register clock input
 
 //Pinos do LCD para o shift register: LCDPin ---> registerPin
 int registerSelect = 1; //Register Select ----> 1 - Q1 - parallel data output
@@ -155,6 +155,8 @@ void setup() {
   pinMode(powerLed, OUTPUT);
   pinMode(redLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
+  //definição do pin digital do sensor de IV
+  pinMode(IRPin, INPUT);
   //definição do pin digital do butão de input variado
   pinMode(buttonPin, INPUT);
  //definição do pin digital do buzzer passivo
@@ -163,6 +165,8 @@ void setup() {
   // Inicialização do LCD
   lcd.begin(16, 2);
 
+  irrecv.enableIRIn();
+  
   // Velocidade inicial do motor (MAX 100)
   // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
   myStepper.setSpeed(speedI);
@@ -178,7 +182,7 @@ void messageLCD (String message,  int colsLCD, int rowLCD){
   lcd.setCursor(colsLCD, rowLCD);
   lcd.print(message);
 }
-
+/*
 // Indica se os produtos (detergente e amaciador) foram colocados
 boolean productIn (int comandOption, boolean product){
   
@@ -188,7 +192,8 @@ boolean productIn (int comandOption, boolean product){
   }
   return product;
 }
-
+*/
+/*
 // Centrifugação - Torcer
 void motorStepMovs (int v, int t){
  int steps = v*t;
@@ -203,18 +208,18 @@ void motorStepMovs (int v, int t){
  {
  myStepper.step(steps); 
  }
- 
- /*//Gira o eixo do motor no sentido horario, aumentando a
+
+ //Gira o eixo do motor no sentido horario, aumentando a
  //velocidade gradativamente
  for (int i = 10; i<=60; i=i+10)
  {
- myStepper.setSpeed(i);
- myStepper.step(40*i);
+   myStepper.setSpeed(i);
+   myStepper.step(40*i);
  }
  delay(50);
- */
 }
-
+*/
+/*
 // Funçao que descreve um programa
 // timeMax: 1min <=> 1seg (para fins demonstrativos)
 
@@ -246,13 +251,14 @@ void progMachine (int timeMax, int speedMov){
     }
   }
 }
-
+*/
+/*
 // Ciclo de Lavagem: Lavagem -> Enxaguamento -> Centrifugação -> Descarga
 // Lavagem 
 void lavagem (int timeMax, int speedMov){
   
 }
-
+*/
 // atualiza o número a ser mostrado no display,
 // após cada clique nos botões de 0-9 do comando
 long updateNum(int digit)
@@ -282,7 +288,7 @@ long updateNum(int digit)
 
   return tempNum;
 }
-
+/*
 // Selecionar um número no comando para a temperatura e velocidade
 // NOTA: Colocar a referencia a este código - baseado no programa do problema 3 da Ficha 9!!
 int comandNumber (){
@@ -380,10 +386,10 @@ int comandNumber (){
     
   return num;    
 }
-
+*/
 void loop() {
   // put your main code here, to run repeatedly:
-  //buttonOnState = checkButton();
+  // buttonOnState = checkButton();
   lcd.clear();
   while (buttonOnState == true){
     // Mensagem de inicio da máquina
@@ -399,12 +405,12 @@ void loop() {
     messageLCD("  Programas   Programas  ", 0, 0);
     messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
     // delay no início da apresentação
-    delay(750);
+    delay(100);
     for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
        // scroll one position left:
       lcd.scrollDisplayLeft();
       // wait a bit:
-      delay(750);
+      delay(100); //delay pequeno para testar rapidamente
     }
 
     lcd.clear();
@@ -414,12 +420,12 @@ void loop() {
     messageLCD("  Programas   Programas  ", 0, 0);
     messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
     // delay no início da apresentação
-    delay(750);
+    delay(100);
     for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
       // scroll one position left:
       lcd.scrollDisplayLeft();
       // wait a bit:
-      delay(750);
+      delay(100); //delay pequeno para testar rapidamente
     }
 
     lcd.clear();
@@ -433,12 +439,14 @@ void loop() {
     }
 
     cont1 = 0;
-    
-    while(comandOption != 0xFFC23D)
+
+    results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
+    //se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las à medida que irrecv.decode(&results) e results.value mudam
+    while(results.value != 0xFFC23D)
     {
-      if (receiveIR)
+      if (irrecv.decode(&results))
       {      
-        switch(comandOption)
+        switch(results.value)
         {
           case 0xFFC23D:  
             Serial.println(" PLAY/PAUSE     "); 
