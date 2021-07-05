@@ -204,7 +204,6 @@ boolean productIn (int comandOption, boolean product){
 /*
 // Funçao que descreve um programa
 // timeMax: 1min <=> 1seg (para fins demonstrativos)
-
 void progMachine (int timeMax, int speedMov){
   
   product = productIn (comandOption, product);
@@ -458,7 +457,6 @@ int comandNumber (){
             lcd.clear();
             messageLCD(" unknown button   ",8,0);
         }
-
         if (cont1 == 4)
         {
           cont1 = 0;
@@ -720,7 +718,6 @@ void loop() {
           }
         }
         break;
-
       // Opção- Delicados 
       case 2: 
          cont1++;  
@@ -728,7 +725,6 @@ void loop() {
         num = updateNum(2);
         Serial.println(num);
         break;
-
       // Opção- Algodões
       case 3: 
           cont1++; 
@@ -736,7 +732,6 @@ void loop() {
           num = updateNum(3);
           Serial.println(num);
           break;
-
       // Opção- Sintéticos
       case 4:
           cont1++;   
