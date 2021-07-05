@@ -42,7 +42,12 @@ int comandOption = results.value;
 long num; // numero final comando
 int temperature;
 int rotations;
-int tempoFuncionamento;
+int cycleDuration;
+int washDuration;
+int rinseDuration;
+int spinDuration;
+int drainDuration;
+
 
 //Boolean que indica se o produto(s) para a lavagem já foram introduzidos
 boolean product = false;
@@ -115,15 +120,16 @@ const int stepsPerRevolution = 2048;  // change this to fit the number of steps 
 //IN2 ----> 10
 //IN3 ----> 9
 //IN4 ----> 8
-Stepper myStepper(stepsPerRevolution, inFourM, inThreeM, inTwoM, inOneM);
+Stepper myStepper(stepsPerRevolution, inFourM, inTwoM, inThreeM, inOneM);
 
 // Variáveis do motor de passo 
 
 int stepCount = 0;  // number of steps the motor has taken
 int motorSpeed = 0;
+int halfSpeed = 0;
 int halfPotentiometer = 511; //ponto médio do potenciometrio
 int sensorReading = 0;
-int speedI = 64;
+//int speedI = 64;
 
 // Tempo do ciclo de lavagem
 int timeCounter;
@@ -169,7 +175,9 @@ void setup() {
   
   // Velocidade inicial do motor (MAX 100)
   // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
-  myStepper.setSpeed(speedI);
+  //myStepper.setSpeed(speedI);
+
+  Serial.begin(9600);
   
 }
 
@@ -191,32 +199,6 @@ boolean productIn (int comandOption, boolean product){
     product = true;      
   }
   return product;
-}
-*/
-/*
-// Centrifugação - Torcer
-void motorStepMovs (int v, int t){
- int steps = v*t;
- //Gira o eixo do motor no sentido horario - 120 graus
- for (int i = 0; i<=3; i++)
- {
- myStepper.step(-steps); 
- }
- 
- //Gira o eixo do motor no sentido anti-horario - 120 graus
- for (int i = 0; i<=2; i++)
- {
- myStepper.step(steps); 
- }
-
- //Gira o eixo do motor no sentido horario, aumentando a
- //velocidade gradativamente
- for (int i = 10; i<=60; i=i+10)
- {
-   myStepper.setSpeed(i);
-   myStepper.step(40*i);
- }
- delay(50);
 }
 */
 /*
@@ -252,13 +234,115 @@ void progMachine (int timeMax, int speedMov){
   }
 }
 */
-/*
+
 // Ciclo de Lavagem: Lavagem -> Enxaguamento -> Centrifugação -> Descarga
 // Lavagem 
 void lavagem (int timeMax, int speedMov){
-  
+  Serial.println(speedMov);
+  myStepper.setSpeed(speedMov);
+  long a = 2048L;
+  long steps = a * speedMov * timeMax / 60;
+  Serial.println("steps");
+  Serial.println(steps);
+  for(int i = 0; i < steps; i += 100){
+    myStepper.step(100);
+  }
 }
-*/
+
+// Enxaguamento
+void enxaguamento (int timeMax, int speedMov){
+  Serial.println(speedMov);
+  myStepper.setSpeed(speedMov);
+  long a = 2048L;
+  long steps = a * speedMov * timeMax / 60;
+  Serial.println("steps");
+  Serial.println(steps);
+  for(int i = 0; i < steps; i += 100){
+    myStepper.step(100);
+  }
+}
+
+void centrifugacao (int timeMax, int speedMov){
+  long revSteps = 2048L;
+  
+  long steps;
+  // o motor acelera clockwise até atingir a velocidade máxima
+  for (int i = 0; i <= speedMov; i = i + (speedMov/3))
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (3 * 3 * 60);
+    Serial.println("steps1");
+    Serial.println(steps);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(100);
+    }
+  }
+  // o motor desacelera clockwise até parar
+  for (int i = speedMov; i >= 0; i = i - (speedMov/3))
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (3 * 3 * 60);
+    Serial.println("steps2");
+    Serial.println(steps);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(100);
+    }
+  }
+  // o motor acelera counterclockwise até atingir velocidade máxima
+  for (int i = 0; i <= speedMov; i = i + (speedMov/3))
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (3 * 3 * 60);
+    Serial.println("steps3");
+    Serial.println(steps);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(-100);
+    }
+  }
+}
+
+
+void descarga (int timeMax, int speedMov){
+  long revSteps = 2048L;
+  
+  long steps;
+  // o motor desacelera até parar e dá-se a descarga
+  for (int i = speedMov; i >= 0; i = i - (speedMov/3))
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (3 * 60);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(-100);
+    }
+  }
+}
+
+
+// Centrifugação - Torcer
+void motorStepMovs (int v, int t){
+ int steps = v*t;
+ //Gira o eixo do motor no sentido horario - 120 graus
+ for (int i = 0; i<=3; i++)
+ {
+ myStepper.step(-2048); 
+ }
+ 
+ //Gira o eixo do motor no sentido anti-horario - 120 graus
+ for (int i = 0; i<=2; i++)
+ {
+ myStepper.step(2048); 
+ }
+
+ //Gira o eixo do motor no sentido horario, aumentando a
+ //velocidade gradativamente
+ for (int i = 10; i<=60; i=i+10)
+ {
+   myStepper.setSpeed(i);
+   myStepper.step(40*i);
+ }
+ delay(50);
+}
+
 // atualiza o número a ser mostrado no display,
 // após cada clique nos botões de 0-9 do comando
 long updateNum(int digit)
@@ -410,7 +494,7 @@ void loop() {
        // scroll one position left:
       lcd.scrollDisplayLeft();
       // wait a bit:
-      delay(100); //delay pequeno para testar rapidamente
+      delay(500); //delay pequeno para testar rapidamente
     }
 
     lcd.clear();
@@ -425,7 +509,7 @@ void loop() {
       // scroll one position left:
       lcd.scrollDisplayLeft();
       // wait a bit:
-      delay(100); //delay pequeno para testar rapidamente
+      delay(500); //delay pequeno para testar rapidamente
     }
 
     lcd.clear();
@@ -435,15 +519,14 @@ void loop() {
       // scroll one position left:
       lcd.scrollDisplayLeft();
       // wait a bit: (delay rápido para testar rapidamente)
-      delay(100);
+      delay(500);
     }
-
+    
     cont1 = 0;
 
     results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
     //se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las à medida que irrecv.decode(&results) e results.value mudam
-    while(results.value != 0xFFC23D)
-    {
+
       if (irrecv.decode(&results))
       {      
         switch(results.value)
@@ -534,7 +617,6 @@ void loop() {
         
         irrecv.resume();
       }
-    }
 
     lcd.clear();
     messageLCD(String(num), 0, 1);
@@ -542,47 +624,78 @@ void loop() {
     
     lcd.clear();
     delay(1000);
-    /*
+    Serial.println("num");
+    Serial.println(num);
+    
     switch (num)
     { 
       // Opção- Rápidos    
-      case 0xFF30CF:  
+      case 1:  
         lcd.clear();
-        messageLCD("Rápidos       Rápidos     Rápidos     Rápidos  Rápidos ",0,0);
-        messageLCD("1-Rápido (Pre.def) 2-Rápido ()",0,0);
+        delay(500);
+        messageLCD("Rapidos      Rapidos        Rapidos      ", 0, 0);
+        messageLCD("1- Rapido (30 min)  2- Rapido (ajustavel)", 0, 1);
+        delay(100);
+        for (int positionCounter = 0; positionCounter < 25; positionCounter++) {
+          lcd.scrollDisplayLeft();
+          delay(500); //delay pequeno para testar rapidamente
+        }
   
         cont1 = 0;
+
+        results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
         
-        while(comandOption != 0xFFC23D)
+        while(results.value != 0xFFC23D)
         {
-          if (receiveIR)
+          if (irrecv.decode(&results))
           {
-            switch (comandOption)
+            switch (results.value)
             {
               case 0xFFC23D:  
               Serial.println(" PLAY/PAUSE     "); 
               break;
               
-              // Rápido (30 min) - tecla 1
+              // Rápido (duração fixa- 30 min)- tecla 1
               case 0xFF30CF:
-                progMachine (30, 682);
+                lcd.clear();
+                /*
+               rpm (máquina)          rpm (stepper)
+               1200           ----->  18
+               800            ----->  12
+               */
+                motorSpeed = 12;
+                halfSpeed = motorSpeed / 2;
+                cycleDuration = 60;
+                // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
+                washDuration = 0.25 * cycleDuration;
+                rinseDuration = 0.25 * cycleDuration;
+                spinDuration = 0.25 * cycleDuration;
+                drainDuration = 0.25 * cycleDuration;
+                
+                //progMachine (30, 682);
+                lavagem(washDuration, motorSpeed);
+                enxaguamento(rinseDuration, halfSpeed);
+                centrifugacao(spinDuration, motorSpeed);
+                descarga(drainDuration, motorSpeed);
                 // FALTA a opção de pausa com o comando
-             
               break;
-        
-              // Rápido ( Temperatuta e velocidade ajustável ) - tecla 2
+              /*
+              // Rápido (duração ajustável- 15-35 min)- tecla 2
               case 0xFF18E7: 
                 // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
                 // FALTA: a funcao PAUSE
                 // FALTA: condição pra dar erro se a temperatura e velocidades colocadas estiverem fora do intervalo (a ser definido de acordo com a datasheet:
                 lcd.clear();
-                messageLCD("Temperatura (entre 20º-60º): ",0,0); 
-                comandNumber();
-                temperature = comandNumber ();
+                motorSpeed = 12;
+                cycleDuration = 30;
+                washDuration = 0.25 * cycleDuration;
+                //messageLCD("Temperatura (entre 20º-60º): ",0,0); 
+                //comandNumber();
+                //temperature = comandNumber ();
         
                 lcd.clear();
                 // FALTA: ver intervalos de velocidade e como relacionar isso para cada programa
-                messageLCD("Velocidade (entre - ): ",0,0); 
+                messageLCD("Duração (entre - ): ",0,0); 
                 comandNumber();
                 rotations = comandNumber ();
         
@@ -595,6 +708,7 @@ void loop() {
                 progMachine (tempoFuncionamento, 682);
   
                 break;
+              */
             }
      
             if (cont1 == 4)
@@ -608,7 +722,7 @@ void loop() {
         break;
 
       // Opção- Delicados 
-      case 0xFF18E7: 
+      case 2: 
          cont1++;  
         Serial.println(" 2              ");
         num = updateNum(2);
@@ -616,7 +730,7 @@ void loop() {
         break;
 
       // Opção- Algodões
-      case 0xFF7A85: 
+      case 3: 
           cont1++; 
           Serial.println(" 3              ");
           num = updateNum(3);
@@ -624,7 +738,7 @@ void loop() {
           break;
 
       // Opção- Sintéticos
-      case 0xFF10EF:
+      case 4:
           cont1++;   
           Serial.println(" 4              ");
           num = updateNum(4);
@@ -632,23 +746,23 @@ void loop() {
           break;
       
       default:
-        Serial.print(" unknown button   ");
+        Serial.print(" unknown case   ");
         Serial.println(results.value, HEX);
     }
-    
+  /*  
   lcd.setCursor(0, 0);
   lcd.print("Menu       Menu     Menu     Menu  Menu ");
   lcd.print("1-Lavagens  2-Cenfriguar 3-Torcer   4-EN");
   delay(500);
   lcd.scrollDisplayLeft();
   delay(100);
-  
+  */
   /*
   lcd.print("Menu:");
   lcd.setCursor(0, 1);
   lcd.print("2-Lavagens");
   delay(1000);
     lcd.clear();
-*/
+  */
   }
 }
