@@ -134,11 +134,17 @@ int halfPotentiometer = 511; //ponto médio do potenciometrio
 int sensorReading = 0;
 int speedI = 64;
 
-
-
-
-
-
+// Tempo do ciclo de lavagem
+/*
+ * Contém o valor do tempo do ciclo de lavagem (timeMax);
+ * Conta o tempo que falta para acabar a lavagem (timeCounter);
+ * Verifica se o tempo já terminou.
+ * Para fins demonstrativos utilizamos a seguinte escala temporal:
+ * 30 min -----> 1 min
+ */
+int timeCounter;
+int timeMax;
+boolean timeCheck = false;
 
 /*-----------------------------------
  * --------Definições do LCD---------
@@ -354,6 +360,8 @@ void loop() {
  * -------------------------------------------
  */
 
+ /* Função para imprimir uma mensagem no LCD
+  */
 
 void messageLCD (String message,  int colsLCD, int rowLCD){
   lcd.setCursor(colsLCD, rowLCD);
