@@ -277,17 +277,16 @@ void loop() {
   messageLCD("Selecione o programa desejado:", 0, 0);
     
   num = IRrequest();
-  Serial.println("num");
-  Serial.println(num);
-  
+
   switch (num){ 
     // Opção- Rápidos  
     
     case 1:  
       lcd.clear();
-      messageLCD("Rápidos       Rápidos        Rápidos        Rápidos        Rápidos",0,0);
-      messageLCD("1-Rápido (Pre.def) 2-Rápido (20 C) 3-Rápido (40 C) 4-Rápido (60 C)",0,0);
-      moveDisplay(9, 100);
+      messageLCD("Rápidos ",0,0);
+      delay(100);
+      messageLCD("1-Rápido (Pre.def) 2-Rápido ",0,0);
+      moveDisplay(9, 1000);
       num = IRrequest();
 
       switch (num){
@@ -683,14 +682,18 @@ int IRrequest (){
         irrecv.resume();
       }
     }
+
     lcd.clear();
-    messageLCD(String(num), 0, 1);
+    messageLCD(String(number), 0, 1);
     delay(1000);
     
+    return number;
 }
 
 void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
 { 
+  lcd.clear();
+  messageLCD("Início da lavagem!",0,0);
   // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
   int washDuration = 0.25 * cycleDuration;
   int rinseDuration = 0.25 * cycleDuration;
