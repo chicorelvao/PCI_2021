@@ -291,6 +291,7 @@ void loop() {
       switch (num){
         // Rápido (30 min) - tecla 1
         case 1:
+        
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
@@ -304,25 +305,19 @@ void loop() {
   
         // Rápido (T = 20ºC) - tecla 2
         case 2: 
-          /*
-          rpm (máquina)          rpm (stepper)
-          1200           ----->  18
-          800            ----->  12
-          */
+
           progRapido(12, 20);
           break;
 
         // Rápido (T = 40ºC) - tecla 3
         case 3: 
-          /*
-          rpm (máquina)          rpm (stepper)
-          1200           ----->  18
-          */
+
           progRapido(18, 40);
           break;
 
         // Rápido (T = 60ºC) - tecla 4
         case 4: 
+        
         /*
         rpm (máquina)          rpm (stepper)
         1200           ----->  18
@@ -343,14 +338,54 @@ void loop() {
     // Opção- Algodões
     
     case 3: 
-        
-        break;
+      lcd.clear();
+      messageLCD("Algodões     Algodões      Algodões",0,0);
+      messageLCD("1-Algodão diário 2-Algodão (225min)",0,0);
+      moveDisplay(9, 1000);
+      num = IRrequest();
+        switch (num){
+        // Algodão diário - tecla 1
+        case 1:
+
+          progRapido(18, 30);
+          break;
+
+        // Algodão (225 min) - tecla 2
+        case 2:
+
+          motorSpeed = 18;
+          cycleDuration = 7.5; // 225 min na datasheet correspondem a 7.5 min no stepper
+          temperature = 40;
+          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          break;
+        }
+      break;
         
     // Opção- Sintéticos
     
     case 4:
-        
-        break;
+      lcd.clear();
+      messageLCD("Sintéticos     Sintéticos     Sintéticos",0,0);
+      messageLCD("1-Sintético diário 2-Sintético (200 min)",0,0);
+      moveDisplay(9, 1000);
+      num = IRrequest();
+        switch (num){
+          // Sintético diário - tecla 1
+          case 1:
+  
+            progRapido(18, 30);
+            break;
+  
+          // Sintético (200 min) - tecla 2
+          case 2:
+  
+            motorSpeed = 18;
+            cycleDuration = 6; // 200 min na datasheet correspondem a 6 min no stepper
+            temperature = 40;
+            cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+            break;
+        }
+      break;
     
     default:
       Serial.print(" unknown button   ");
