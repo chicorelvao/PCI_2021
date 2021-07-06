@@ -132,6 +132,13 @@ int sensorReading = 0;
 //int speedI = 64;
 
 // Tempo do ciclo de lavagem
+/*
+ * Contém o valor do tempo do ciclo de lavagem (timeMax);
+ * Conta o tempo que falta para acabar a lavagem (timeCounter);
+ * Verifica se o tempo já terminou.
+ * Para fins demonstrativos utilizamos a seguinte escala temporal:
+ * 30 min -----> 1 min
+ */
 int timeCounter;
 int timeMax;
 boolean timeCheck = false;
@@ -185,6 +192,9 @@ void setup() {
  * ---------------- Funções ------------------
  * -------------------------------------------
  */
+
+ /* Função para imprimir uma mensagem no LCD
+  */
 
 void messageLCD (String message,  int colsLCD, int rowLCD){
   lcd.setCursor(colsLCD, rowLCD);
@@ -473,6 +483,11 @@ void loop() {
   // put your main code here, to run repeatedly:
   // buttonOnState = checkButton();
   lcd.clear();
+  /*
+   * Inicio do ciclo que controla todas operações realizadas pela máquina
+   * buttonOnState == true -> Máquina Ligada 
+   * buttonOnState == false -> Máquina Desligada
+   */
   while (buttonOnState == true){
     // Mensagem de inicio da máquina
     messageLCD("Bem Vindo!",3,0);
@@ -488,6 +503,12 @@ void loop() {
     messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
     // delay no início da apresentação
     delay(100);
+    /*
+     * Permite o movimento das mensagens das opções da direita para a esquerda,
+     * facilitando a leitura de todas pelo utilizador.
+     * O limite superior do ciclo é:
+     * comprimento da frase - nº de posições no display
+     */
     for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
        // scroll one position left:
       lcd.scrollDisplayLeft();
@@ -521,10 +542,13 @@ void loop() {
     }
     
     cont1 = 0;
-
-    results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
-    //se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las à medida que irrecv.decode(&results) e results.value mudam
-
+    /* garante que entra no while, se a última tecla que o utilizador premiu foi o play
+     * se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las
+     * à medida que irrecv.decode(&results) e results.value mudam.
+     */
+    results.value = 0xFF6897; 
+    while(results.value != 0xFFC23D)
+    {
       if (irrecv.decode(&results))
       {      
         switch(results.value)
