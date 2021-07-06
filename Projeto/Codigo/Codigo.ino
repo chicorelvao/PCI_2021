@@ -18,7 +18,7 @@
  * --------------------------------
  */
 
-int potentAlog = A0;
+
 int tempAlog = A1;
 
 /*---------------------------------
@@ -35,11 +35,11 @@ int inFourM = 8;
 int buzzPin;
 
 //Pins de conexão com os LEDs
-int greenLed = 4;
+int greenLed;
 //o power led é vermelho
-int powerLed = 5;
-int redLed = 6;
-int blueLed = 2;
+int powerLed;
+int redLed;
+int blueLed;
 
 /*
  * Pins de conexão com o LCD, que vai ser utilizado com o
@@ -231,7 +231,7 @@ void setup() {
   
   // Velocidade inicial do motor (MAX 100)
   // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
-  myStepper.setSpeed(speedI);
+
 
 
   
