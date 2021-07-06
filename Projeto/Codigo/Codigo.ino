@@ -292,7 +292,26 @@ void loop() {
         case 1:
           progMachine (30, 682);
           // FALTA a opção de pausa com o comando
-        
+            /*
+          rpm (máquina)          rpm (stepper)
+          1200           ----->  18
+          800            ----->  12
+          */
+          motorSpeed = 12;
+          halfSpeed = motorSpeed / 2;
+          cycleDuration = 60;
+          // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
+          washDuration = 0.25 * cycleDuration;
+          rinseDuration = 0.25 * cycleDuration;
+          spinDuration = 0.25 * cycleDuration;
+          drainDuration = 0.25 * cycleDuration;
+          
+          //progMachine (30, 682);
+          lavagem(washDuration, motorSpeed);
+          enxaguamento(rinseDuration, halfSpeed);
+          centrifugacao(spinDuration, motorSpeed);
+          descarga(drainDuration, motorSpeed);
+               
         break;
   
         // Rápido ( Temperatuta e velocidade ajustável ) - tecla 2
@@ -554,176 +573,9 @@ void motorStepMovs (int v, int t){
  delay(50);
 }
 
-// atualiza o número a ser mostrado no display,
-// após cada clique nos botões de 0-9 do comando
-long updateNum(int digit)
-{ 
-  switch (cont1)
-  {
-    case 1:
-    oneDig = digit;
-    tempNum = oneDig;
-    break;
-    
-    case 2:
-    twoDig = 10 * oneDig + digit;
-    tempNum = twoDig;
-    break;
-    
-    case 3:
-    threeDig = 10 * twoDig + digit;
-    tempNum = threeDig;
-    break;
 
 
-// Selecionar um número no comando para a temperatura e velocidade
-// NOTA: Colocar a referencia a este código - baseado no programa do problema 3 da Ficha 9!!
-int comandNumber (){
-    cont1 = 0;
-    
-    while(comandOption != 0xFFC23D)
-    {
-      if (receiveIR)
-      {      
-        switch(comandOption)
-        {  
-          case 0xFF6897:
-            cont1++;
-            num = updateNum(0);
-            lcd.clear();
-            messageLCD("0",8,0);
-            break;
-         
-          case 0xFF30CF:  
-            cont1++;
-            num = updateNum(1);
-            lcd.clear();
-            messageLCD("1",8,0);
-            break;
-        
-          case 0xFF18E7: 
-            cont1++;  
-            num = updateNum(2);
-            lcd.clear();
-            messageLCD("2",8,0);
-            break;
-        
-          case 0xFF7A85: 
-            cont1++;  
-            num = updateNum(3);
-            lcd.clear();
-            messageLCD("3",8,0);
-            break;
-            
-          case 0xFF10EF:
-            cont1++;  
-            num = updateNum(4);
-            lcd.clear();
-            messageLCD("4",8,0);
-            break;
-        
-          case 0xFF38C7:  
-            cont1++;  
-            num = updateNum(5);
-            lcd.clear();
-            messageLCD("5",8,0);
-            break;
-        
-          case 0xFF5AA5: 
-            cont1++;  
-            num = updateNum(6);
-            lcd.clear();
-            messageLCD("6",8,0);
-            break;
-        
-          case 0xFF42BD:
-            cont1++;  
-            num = updateNum(7);
-            lcd.clear();
-            messageLCD("7",8,0);
-            break;
-        
-          case 0xFF4AB5: 
-            cont1++;  
-            num = updateNum(8);
-            lcd.clear();
-            messageLCD("8",8,0);
-            break;
-        
-          case 0xFF52AD: 
-            cont1++;  
-            num = updateNum(9);
-            lcd.clear();
-            messageLCD("9",8,0);
-            break;
-        
-          default:
-            lcd.clear();
-            messageLCD(" unknown button   ",8,0);
-        }
-        if (cont1 == 4)
-        {
-          cont1 = 0;
-        }
-        
-        irrecv.resume();
-      }
-    }
-    
-  return num;    
-}
-*/
-void loop() {
-  // put your main code here, to run repeatedly:
-  // buttonOnState = checkButton();
-  lcd.clear();
-  /*
-   * Inicio do ciclo que controla todas operações realizadas pela máquina
-   * buttonOnState == true -> Máquina Ligada 
-   * buttonOnState == false -> Máquina Desligada
-   */
-  while (buttonOnState == true){
-    // Mensagem de inicio da máquina
-    messageLCD("Bem Vindo!",3,0);
-    delay(2000);
-    lcd.clear();
-  
-    // Apresentação do menu principal e respetivas opções
-    messageLCD("Menu",5,0); 
-    delay(2000);
-    lcd.clear();
-    
-    messageLCD("  Programas   Programas  ", 0, 0);
-    messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
-    // delay no início da apresentação
-    delay(100);
-    /*
-     * Permite o movimento das mensagens das opções da direita para a esquerda,
-     * facilitando a leitura de todas pelo utilizador.
-     * O limite superior do ciclo é:
-     * comprimento da frase - nº de posições no display
-     */
-    for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
-       // scroll one position left:
-      lcd.scrollDisplayLeft();
-      // wait a bit:
-      delay(500); //delay pequeno para testar rapidamente
-    }
 
-    lcd.clear();
-    // delay na transição entre a apresentação dos programas
-    delay(500);
-    
-    messageLCD("  Programas   Programas  ", 0, 0);
-    messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
-    // delay no início da apresentação
-    delay(100);
-    for (int positionCounter = 0; positionCounter < 9; positionCounter++) {
-      // scroll one position left:
-      lcd.scrollDisplayLeft();
-      // wait a bit:
-      delay(500); //delay pequeno para testar rapidamente
-    }
 
 int IRrequest (){
     //número que vai ser introduzido pelo o utilizador
@@ -813,149 +665,15 @@ int IRrequest (){
         }
         irrecv.resume();
       }
-
+    }
     lcd.clear();
     messageLCD(String(num), 0, 1);
     delay(1000);
     
-    lcd.clear();
-    delay(1000);
-    Serial.println("num");
-    Serial.println(num);
-    
-    switch (num)
-    { 
-      // Opção- Rápidos    
-      case 1:  
-        lcd.clear();
-        delay(500);
-        messageLCD("Rapidos      Rapidos        Rapidos      ", 0, 0);
-        messageLCD("1- Rapido (30 min)  2- Rapido (ajustavel)", 0, 1);
-        delay(100);
-        for (int positionCounter = 0; positionCounter < 25; positionCounter++) {
-          lcd.scrollDisplayLeft();
-          delay(500); //delay pequeno para testar rapidamente
-        }
-  
-        cont1 = 0;
-
-        results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
-        
-        while(results.value != 0xFFC23D)
-        {
-          if (irrecv.decode(&results))
-          {
-            switch (results.value)
-            {
-              case 0xFFC23D:  
-              Serial.println(" PLAY/PAUSE     "); 
-              break;
-              
-              // Rápido (duração fixa- 30 min)- tecla 1
-              case 0xFF30CF:
-                lcd.clear();
-                /*
-               rpm (máquina)          rpm (stepper)
-               1200           ----->  18
-               800            ----->  12
-               */
-                motorSpeed = 12;
-                halfSpeed = motorSpeed / 2;
-                cycleDuration = 60;
-                // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
-                washDuration = 0.25 * cycleDuration;
-                rinseDuration = 0.25 * cycleDuration;
-                spinDuration = 0.25 * cycleDuration;
-                drainDuration = 0.25 * cycleDuration;
-                
-                //progMachine (30, 682);
-                lavagem(washDuration, motorSpeed);
-                enxaguamento(rinseDuration, halfSpeed);
-                centrifugacao(spinDuration, motorSpeed);
-                descarga(drainDuration, motorSpeed);
-                // FALTA a opção de pausa com o comando
-              break;
-              /*
-              // Rápido (duração ajustável- 15-35 min)- tecla 2
-              case 0xFF18E7: 
-                // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
-                // FALTA: a funcao PAUSE
-                // FALTA: condição pra dar erro se a temperatura e velocidades colocadas estiverem fora do intervalo (a ser definido de acordo com a datasheet:
-                lcd.clear();
-                motorSpeed = 12;
-                cycleDuration = 30;
-                washDuration = 0.25 * cycleDuration;
-                //messageLCD("Temperatura (entre 20º-60º): ",0,0); 
-                //comandNumber();
-                //temperature = comandNumber ();
-        
-                lcd.clear();
-                // FALTA: ver intervalos de velocidade e como relacionar isso para cada programa
-                messageLCD("Duração (entre - ): ",0,0); 
-                comandNumber();
-                rotations = comandNumber ();
-        
-                lcd.clear();
-                // Admitindo 10-200
-                messageLCD("Tempo (entre 10-200 min): ",0,0); 
-                comandNumber();
-                tempoFuncionamento = comandNumber ();
-        
-                progMachine (tempoFuncionamento, 682);
-  
-                break;
-              */
-            }
-     
-            if (cont1 == 4)
-            {
-              cont1 = 0;
-            }
-            
-            irrecv.resume();
-          }
-        }
-        break;
-      // Opção- Delicados 
-      case 2: 
-         cont1++;  
-        Serial.println(" 2              ");
-        num = updateNum(2);
-        Serial.println(num);
-        break;
-      // Opção- Algodões
-      case 3: 
-          cont1++; 
-          Serial.println(" 3              ");
-          num = updateNum(3);
-          Serial.println(num);
-          break;
-      // Opção- Sintéticos
-      case 4:
-          cont1++;   
-          Serial.println(" 4              ");
-          num = updateNum(4);
-          Serial.println(num);
-          break;
-      
-      default:
-        Serial.print(" unknown case   ");
-        Serial.println(results.value, HEX);
-    }
-  /*  
-  lcd.setCursor(0, 0);
-  lcd.print("Menu       Menu     Menu     Menu  Menu ");
-  lcd.print("1-Lavagens  2-Cenfriguar 3-Torcer   4-EN");
-  delay(500);
-  lcd.scrollDisplayLeft();
-  delay(100);
-  */
-  /*
-  lcd.print("Menu:");
-  lcd.setCursor(0, 1);
-  lcd.print("2-Lavagens");
-  delay(1000);
-    lcd.clear();
-  */
-  }
 }
+    
+    
+              
+
+
+            
