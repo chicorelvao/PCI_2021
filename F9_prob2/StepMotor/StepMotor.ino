@@ -46,7 +46,84 @@ void setup() {
   Serial.begin(9600);
 }
 
+void lavagem (int timeMax, int speedMov){
+  myStepper.setSpeed(speedMov);
+  long a = 2048L;
+  long steps = a * speedMov * timeMax / 60;
+  for(int i = 0; i < steps; i += 100){
+    myStepper.step(100);
+  }
+}
+
+void enxaguamento (int timeMax, int speedMov){
+  myStepper.setSpeed(speedMov / 2);
+  long a = 2048L;
+  long steps = a * speedMov * timeMax / 60;
+  for(int i = 0; i < steps; i += 100){
+    myStepper.step(100);
+  }
+}
+
+void centrifugacao (int timeMax, int speedMov){
+  long revSteps = 2048L;
+  
+  long steps;
+  // o motor acelera clockwise até atingir a velocidade máxima
+  for (int i = 0; i <= speedMov; i = i + 6)
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (3 * 3 * 60);
+    Serial.println("steps1");
+    Serial.println(steps);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(100);
+    }
+  }
+  // o motor desacelera clockwise até parar
+  for (int i = speedMov; i >= 0; i = i - 6)
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (3 * 3 * 60);
+    Serial.println("steps2");
+    Serial.println(steps);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(100);
+    }
+  }
+  // o motor acelera counterclockwise até atingir velocidade máxima
+  for (int i = 0; i <= speedMov; i = i + 6)
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (3 * 3 * 60);
+    Serial.println("steps3");
+    Serial.println(steps);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(-100);
+    }
+  }
+}
+
+void descarga (int timeMax, int speedMov){
+  long revSteps = 2048L;
+  
+  long steps;
+  // o motor desacelera até parar e dá-se a descarga
+  for (int i = speedMov; i >= 0; i = i--)
+  {
+    myStepper.setSpeed(i);
+    steps = revSteps * i * timeMax / (19 * 60);
+    for(int i = 0; i < steps; i += 100){
+      myStepper.step(-100);
+    }
+  }
+}
+
 void loop() {
+  //lavagem(15, 18);
+  //enxaguamento(15, 18);
+  centrifugacao(30, 18);
+  //descarga(15,18);
+  /*
   // read the sensor value:
   sensorReading = analogRead(A0);
   // map it to a range from 0 to 100:
@@ -77,11 +154,15 @@ void loop() {
      * myStepper.step(200) ----> Fazer 200 passos (Código para aqui até fazer os 200 passos)
      * Quanto maior a velocidade, mais depressa faz os passos.
     */
+    /*
     if(motorSpeed != 0) {
       myStepper.step(64); 
     }
+    
+
+    
   } 
-  
+  */
 
   
 }

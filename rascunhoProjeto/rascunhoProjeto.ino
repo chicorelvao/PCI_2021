@@ -290,7 +290,7 @@ void loop() {
     }
     
     lcd.clear();
-
+    //o valor máximo do positionCounter é dado pela diferença entre 16 e o comprimento da string que queremos imprimir
     messageLCD("Selecione o programa desejado:", 0, 0);
     for (int positionCounter = 0; positionCounter < 14; positionCounter++) {
       // scroll one position left:

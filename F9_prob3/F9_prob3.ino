@@ -16,7 +16,7 @@ int threeDig;
 int fourDig;
 
 #include <IRremote.h>
-int pin = 9;
+int pin = 6;
 IRrecv irrecv(pin);
 decode_results results;
 
@@ -24,7 +24,7 @@ void setup()
 {
   byte numDigits = 4;
   byte digitPins[] = {10, 11, 12, 13};
-  byte segmentPins[] = {2, 3, 4, 5, 6, 7, 8};
+  byte segmentPins[] = {2, 3, 4, 5, 9, 7, 8};
   byte hardwareConfig = COMMON_ANODE;
   sevseg.begin(hardwareConfig, numDigits, digitPins, segmentPins, true); 
   
