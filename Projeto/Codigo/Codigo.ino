@@ -5,9 +5,33 @@
  */
 
 //bibliotecas usadas
+
 #include <Stepper.h>
 #include <LiquidCrystal_74HC595.h>
 #include <IRremote.h>
+
+
+
+/*---------------------------------
+ * --------Simbolos do LCD---------
+ * --------------------------------
+ */
+byte lock[8] = {0b00100 ,
+                0b01010 ,
+                0b01010 ,
+                0b11111 ,
+                0b11111 ,
+                0b11111 ,
+                0b11111 ,
+                0b00000};
+
+
+
+
+
+
+
+
 
 
 
@@ -212,6 +236,7 @@ void setup() {
   //Inicialização do sensor de infra-vermelhos
   irrecv.enableIRIn();
 
+  lcd.createChar(0,lock);
 
   /*--------------------------------------------
  * ----------------Apresentação-----------------
@@ -692,7 +717,8 @@ int IRrequest (){
 
 void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
 { 
-  lcd.clear();
+  lcd.setCursor(15,1);
+  lcd.write(byte(0));
   messageLCD("Início da lavagem!",0,0);
   // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
   int washDuration = 0.25 * cycleDuration;
