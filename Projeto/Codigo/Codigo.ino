@@ -96,6 +96,7 @@ boolean product = false;
 int timeCounter;
 int timeMax;
 boolean timeCheck = false;
+int cycleDuration;
 
  //Conta o número de dígitos inseridos pelo utilizador no LCD
 int cont1;
@@ -234,6 +235,7 @@ void setup() {
 
 
 
+  Serial.begin(9600);
   
 }
 
@@ -275,69 +277,53 @@ void loop() {
   messageLCD("Selecione o programa desejado:", 0, 0);
     
   num = IRrequest();
-  
+  Serial.println("num");
+  Serial.println(num);
   
   switch (num){ 
     // Opção- Rápidos  
     
     case 1:  
       lcd.clear();
-      messageLCD("Rápidos       Rápidos     Rápidos     Rápidos  Rápidos ",0,0);
-      messageLCD("1-Rápido (Pre.def) 2-Rápido ()",0,0);
+      messageLCD("Rápidos       Rápidos        Rápidos        Rápidos        Rápidos",0,0);
+      messageLCD("1-Rápido (Pre.def) 2-Rápido (20 C) 3-Rápido (40 C) 4-Rápido (60 C)",0,0);
       moveDisplay(9, 100);
       num = IRrequest();
 
       switch (num){
         // Rápido (30 min) - tecla 1
         case 1:
-          progMachine (30, 682);
+          //progMachine (30, 682);
           // FALTA a opção de pausa com o comando
-            /*
+          /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
           800            ----->  12
           */
           motorSpeed = 12;
-          halfSpeed = motorSpeed / 2;
           cycleDuration = 60;
-          // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
-          washDuration = 0.25 * cycleDuration;
-          rinseDuration = 0.25 * cycleDuration;
-          spinDuration = 0.25 * cycleDuration;
-          drainDuration = 0.25 * cycleDuration;
-          
+          temperature = 30;
           //progMachine (30, 682);
-          lavagem(washDuration, motorSpeed);
-          enxaguamento(rinseDuration, halfSpeed);
-          centrifugacao(spinDuration, motorSpeed);
-          descarga(drainDuration, motorSpeed);
+          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
                
         break;
   
-        // Rápido ( Temperatuta e velocidade ajustável ) - tecla 2
+        // Rápido (duração e temperatura ajustável) - tecla 2
         case 2: 
           // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
           // FALTA: a funcao PAUSE
           // FALTA: condição pra dar erro se a temperatura e velocidades colocadas estiverem fora do intervalo (a ser definido de acordo com a datasheet:
-          lcd.clear();
-          messageLCD("Temperatura (entre 20º-60º): ",0,0); 
-          
-          temperature = IRrequest();
-  
-          lcd.clear();
-          // FALTA: ver intervalos de velocidade e como relacionar isso para cada programa
-          messageLCD("Velocidade (entre - ): ",0,0); 
-          
-          rotations = IRrequest();
-  
-          lcd.clear();
-          // Admitindo 10-200
-          messageLCD("Tempo (entre 10-200 min): ",0,0); 
-        
-          tempoFuncionamento = IRrequest();
-  
-          progMachine (tempoFuncionamento, 682);
-
+          /*
+          rpm (máquina)          rpm (stepper)
+          1200           ----->  18
+          800            ----->  12
+          */
+          messageLCD("Insira a duração desejada (15-35 min): ",0,0);
+          moveDisplay(9, 100);
+          num = IRrequest();
+          motorSpeed = 12;
+          cycleDuration = num;
+          temperature = 20;
           break;
       }
 
@@ -465,7 +451,38 @@ void progMachine (int timeMax, int speedMov){
   }
 }
 
-// Ciclo de Lavagem: Lavagem -> Enxaguamento -> Centrifugação -> Descarga
+/*
+ * Métodos responsáveis pela execução do ciclo de lavagem,
+ * na ordem: lavagem, enxaguamento, centrifugação e descarga.
+ * A lavagem e o enxaguamento consistem na rotação do motor
+ * no sentido dos ponteiros do relógio, com o motor a rodar mais
+ * rapidamente na lavagem do que no enxaguamento. O método
+ * correspondente à centrifugação acelera a rotação do motor 
+ * clockwise até atingir a velocidade máxima, desacelera-o
+ * até parar, inverte o sentido e acelera-o counterclockwise 
+ * até atingir a velocidade máxima. O método correspondente 
+ * à descarga apenas desacelera o motor até parar, dando-se 
+ * depois a descarga.
+ * 
+ * O número de steps correspondentes a um dado programa 
+ * foram obtidos através da velocidade de rotação do motor e 
+ * do tempo de execução do programa da seguinte forma:
+ * Considerando que a velocidade de rotação do motor são
+ * 18 rpm e o tempo introduzido pelo utilizador são 45 min, 
+ * o fator de conversão dita que 45 min --> 1,5 min e tem-se
+ * 
+ * tempo (s)         rotações
+ * 60        ----->  18
+ * 90        ----->  27
+ * 
+ * rotações          steps
+ * 1         ----->  2048
+ * 27        ----->  55296
+ * 
+ * Logo, a um programa de 60 min, corresponde uma demonstração
+ * de 1,5 min com 55296 steps.
+ */
+ 
 // Lavagem 
 void lavagem (int timeMax, int speedMov){
   Serial.println(speedMov);
@@ -547,7 +564,7 @@ void descarga (int timeMax, int speedMov){
   }
 }
 
-
+/*
 // Centrifugação - Torcer
 void motorStepMovs (int v, int t){
  int steps = v*t;
@@ -572,7 +589,7 @@ void motorStepMovs (int v, int t){
  }
  delay(50);
 }
-
+*/
 
 
 
@@ -670,6 +687,19 @@ int IRrequest (){
     messageLCD(String(num), 0, 1);
     delay(1000);
     
+}
+
+void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
+{ 
+  // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
+  int washDuration = 0.25 * cycleDuration;
+  int rinseDuration = 0.25 * cycleDuration;
+  int spinDuration = 0.25 * cycleDuration;
+  int drainDuration = 0.25 * cycleDuration;
+  lavagem(washDuration, motorSpeed);
+  enxaguamento(rinseDuration, motorSpeed);
+  centrifugacao(spinDuration, motorSpeed);
+  descarga(drainDuration, motorSpeed);
 }
     
     
