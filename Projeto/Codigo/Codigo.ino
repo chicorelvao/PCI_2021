@@ -142,9 +142,7 @@ int speedI = 64;
  * Para fins demonstrativos utilizamos a seguinte escala temporal:
  * 30 min -----> 1 min
  */
-int timeCounter;
-int timeMax;
-boolean timeCheck = false;
+
 
 /*-----------------------------------
  * --------Definições do LCD---------
@@ -285,6 +283,7 @@ void loop() {
       lcd.clear();
       messageLCD("Rápidos       Rápidos     Rápidos     Rápidos  Rápidos ",0,0);
       messageLCD("1-Rápido (Pre.def) 2-Rápido ()",0,0);
+      moveDisplay(9, 100);
       num = IRrequest();
 
       switch (num){
@@ -459,74 +458,79 @@ void lavagem (int timeMax, int speedMov){
 
 
 int IRrequest (){
-
-    int number; 
+    //número que vai ser introduzido pelo o utilizador
+    int number = 0; 
+    //Variável que conta as casas decimais para o utilizador fazer número grandes rapidamente
+    int countDecimal = 0;
     results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
     //se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las à medida que irrecv.decode(&results) e results.value mudam
 
 
-    while(results.value != 0xFFC23D)
-    {
-      if (irrecv.decode(&results))
-      {      
-        switch(results.value)
-        {
+    while(results.value != 0xFFC23D){
+
+      if (irrecv.decode(&results)){   
+
+        switch(results.value){
           case 0xFFC23D:  
             Serial.println(" PLAY/PAUSE     "); 
 
             break;
             
           case 0xFF6897:
-            number = 0;
+            number = number *10 + 0;
             messageLCD(String(number), 0, 1);
             delay(1000);
             
             break;
         
           case 0xFF30CF:  
-            number = 1;
+            number = number *10 + 1;
+            
+           
             messageLCD(String(number), 0, 1);
             delay(1000);
             break;
         
           case 0xFF18E7: 
-            number = 2;
+            number = number *10 + 2;
+            
             messageLCD(String(number), 0, 1);
             delay(1000);
             break;
         
           case 0xFF7A85: 
-            number = 3;
+            number = number *10 + 3;
+            
             messageLCD(String(number), 0, 1);
             break;
             
           case 0xFF10EF:
-            number = 4;
+            number = number *10 + 4;
             messageLCD(String(number), 0, 1);
             break;
         
           case 0xFF38C7:  
-            number = 5;
+            number = number *10 + 5;
             messageLCD(String(number), 0, 1);
             break;
         
           case 0xFF5AA5: 
-            number = 6;
+            number = number *10 + 6;
             messageLCD(String(number), 0, 1);
             break;
         
           case 0xFF42BD:
-            number = 7;
+            number = number *10 + 7;
             messageLCD(String(number), 0, 1);
             break;
         
           case 0xFF4AB5: 
-            number = 8;
+            number = number *10 + 8;
             messageLCD(String(number), 0, 1);
             break;
         
           case 0xFF52AD: 
-            number = 9;
+            number = number *10 + 9;
             messageLCD(String(number), 0, 1);
             break;
         
@@ -535,6 +539,10 @@ int IRrequest (){
             Serial.println(results.value, HEX);
         }
         
+        if(number > 900){
+          number = 0;
+          messageLCD("0     ", 0, 1);
+        }
         irrecv.resume();
       }
     }
