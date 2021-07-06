@@ -308,17 +308,14 @@ void loop() {
     
     case 1:  
       lcd.clear();
-      messageLCD("Rápidos ",0,0);
-      delay(100);
-      messageLCD("1-Rápido (Pre.def) 2-Rápido ",0,0);
+      messageLCD("Rapidos       Rapidos        Rapidos        Rapidos        Rapidos",0,0);
+      messageLCD("1-Rapido (Pre.def) 2-Rapido (20 C) 3-Rapido (40 C) 4-Rapido (60 C)",0,0);
       moveDisplay(9, 1000);
       num = IRrequest();
 
       switch (num){
         // Rápido (30 min) - tecla 1
         case 1:
-          //progMachine (30, 682);
-          // FALTA a opção de pausa com o comando
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
@@ -327,42 +324,55 @@ void loop() {
           motorSpeed = 12;
           cycleDuration = 60;
           temperature = 30;
-          //progMachine (30, 682);
-          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
-               
-        break;
+          cicloDeLavagem(motorSpeed, cycleDuration, temperature);      
+          break;
   
-        // Rápido (duração e temperatura ajustável) - tecla 2
+        // Rápido (T = 20ºC) - tecla 2
         case 2: 
-          // FALTA: Fazer as opções do comando para colocar numeros (temperatura e velocidade)
-          // FALTA: a funcao PAUSE
-          // FALTA: condição pra dar erro se a temperatura e velocidades colocadas estiverem fora do intervalo (a ser definido de acordo com a datasheet:
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
           800            ----->  12
           */
-          messageLCD("Insira a duração desejada (15-35 min): ",0,0);
-          moveDisplay(9, 100);
-          num = IRrequest();
-          motorSpeed = 12;
-          cycleDuration = num;
-          temperature = 20;
+          progRapido(12, 20);
           break;
-      }
 
-          
+        // Rápido (T = 40ºC) - tecla 3
+        case 3: 
+          /*
+          rpm (máquina)          rpm (stepper)
+          1200           ----->  18
+          */
+          progRapido(18, 40);
+          break;
+
+        // Rápido (T = 60ºC) - tecla 4
+        case 4: 
+        /*
+        rpm (máquina)          rpm (stepper)
+        1200           ----->  18
+        1000           ----->  15
+        */
+        progRapido(15, 60);
+        break;
+      }
       
       break;
+      
     // Opção- Delicados 
+    
     case 2: 
         
       break;
+      
     // Opção- Algodões
+    
     case 3: 
         
         break;
+        
     // Opção- Sintéticos
+    
     case 4:
         
         break;
@@ -503,7 +513,7 @@ void progMachine (int timeMax, int speedMov){
  * 1         ----->  2048
  * 27        ----->  55296
  * 
- * Logo, a um programa de 60 min, corresponde uma demonstração
+ * Logo, a um programa de 45 min, corresponde uma demonstração
  * de 1,5 min com 55296 steps.
  */
  
@@ -713,6 +723,15 @@ int IRrequest (){
     delay(1000);
     
     return number;
+}
+
+void progRapido(int motorSpeed, int temperature)     
+{
+  lcd.clear();
+  messageLCD("Insira a duracao desejada (15-35 min): ",0,0);
+  moveDisplay(9, 100);
+  num = IRrequest();
+  cicloDeLavagem(motorSpeed, num*2, temperature);            
 }
 
 void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
