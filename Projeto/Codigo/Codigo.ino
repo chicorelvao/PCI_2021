@@ -1,3 +1,5 @@
+
+
 /*
  * Projeto de PCI 2021 - PL2 - Grupo 2
  * Implementação de uma máquina lavar.
@@ -9,6 +11,7 @@
 #include <Stepper.h>
 #include <LiquidCrystal_74HC595.h>
 #include <IRremote.h>
+#include <NewTone.h>
 
 
 
@@ -56,7 +59,7 @@ int inThreeM = 9;
 int inFourM = 8;
 
 //Pin do buzzer
-int buzzPin = 12;
+int buzzPin = 7;
 
 //Pins de conexão com os LEDs
 int greenLed = 1;
@@ -93,10 +96,10 @@ int IRPin = 6;
 
 //Tecla do comando selecionada
 
-long num; // numero final comando
+int num; // numero final comando
 int temperature;
 int rotations;
-int tempoFuncionamento;
+
 
 
 
@@ -433,7 +436,7 @@ void loop() {
     
     default:
       lcd.clear();
-      messageLCD("Opcaoo invalida.", 0, 0);
+      messageLCD("Opcao invalida.", 0, 0);
       delay(1000);
       
   }
@@ -478,61 +481,7 @@ boolean productIn (int comandOption, boolean product){
 }
 
 
-// Centrifugação - Torcer
-void motorStepMovs (int v, int t){
- int steps = v*t;
- //Gira o eixo do motor no sentido horario - 120 graus
- for (int i = 0; i<=3; i++)
- {
- myStepper.step(-steps); 
- }
- 
- //Gira o eixo do motor no sentido anti-horario - 120 graus
- for (int i = 0; i<=2; i++)
- {
- myStepper.step(steps); 
- }
- //Gira o eixo do motor no sentido horario, aumentando a
- //velocidade gradativamente
- for (int i = 10; i<=60; i=i+10)
- {
-   myStepper.setSpeed(i);
-   myStepper.step(40*i);
- }
- delay(50);
-}
 
-
-// Funçao que descreve um programa
-// timeMax: 1min <=> 1seg (para fins demonstrativos)
-void progMachine (int timeMax, int speedMov){
-  
-  product = productIn (comandOption, product);
-  // Enquanto o detergente não for introduzido
-  while (product == false)
-  {
-    digitalWrite (redLed, HIGH); // Sinaliza que o ciclo de lavagem não pode ser iniciado
-    lcd.clear();
-    messageLCD("Wainting...", 0,0);
-    product = productIn (comandOption, product);               
-  }
-                
-  digitalWrite (redLed, LOW); 
-  digitalWrite (greenLed, HIGH); // Sinaliza que se pode iniciar o ciclo de lavagem
-  digitalWrite (blueLed, HIGH); // Indica que o produto para a lavagem foi introduzido
-                
-  lcd.clear();
-  messageLCD("Lets Start!", 0,0);
-                
-  while (timeCheck == false)
-  {
-    motorStepMovs (speedMov, timeMax);
-    timeCounter++;
-    if(timeCounter = timeMax){
-      timeCheck == true;
-    }
-  }
-}
 
 /*
  * Métodos responsáveis pela execução do ciclo de lavagem,
@@ -617,20 +566,6 @@ void  lavagem (int timeMax, int speedMov){
   }
   
   
-}
-
-
-// Enxaguamento
-void enxaguamento (int timeMax, int speedMov){
-  Serial.println(speedMov);
-  myStepper.setSpeed(speedMov);
-  long a = 2048L;
-  long steps = a * speedMov * timeMax / 60;
-  Serial.println("steps");
-  Serial.println(steps);
-  for(int i = 0; i < steps; i += 100){
-    myStepper.step(100);
-  }
 }
 
 
@@ -743,49 +678,19 @@ void descarga (int timeMax, int speedMov){
   }
 }
 
-/*
-// Centrifugação - Torcer
-void motorStepMovs (int v, int t){
- int steps = v*t;
- //Gira o eixo do motor no sentido horario - 120 graus
- for (int i = 0; i<=3; i++)
- {
- myStepper.step(-2048); 
- }
- 
- //Gira o eixo do motor no sentido anti-horario - 120 graus
- for (int i = 0; i<=2; i++)
- {
- myStepper.step(2048); 
- }
-
- //Gira o eixo do motor no sentido horario, aumentando a
- //velocidade gradativamente
- for (int i = 10; i<=60; i=i+10)
- {
-   myStepper.setSpeed(i);
-   myStepper.step(40*i);
- }
- delay(50);
-}
-*/
-
-
-
 
 int IRrequest (){
     //número que vai ser introduzido pelo o utilizador
     int number = 0; 
-    //Variável que conta as casas decimais para o utilizador fazer número grandes rapidamente
-    int countDecimal = 0;
+
     results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
     //se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las à medida que irrecv.decode(&results) e results.value mudam
 
 
     while(results.value != 0xFFC23D){
-
+      
       if (irrecv.decode(&results)){   
-
+       
         switch(results.value){
           case 0xFFC23D:  
             Serial.println(" PLAY/PAUSE     "); 
@@ -858,7 +763,7 @@ int IRrequest (){
         if(number > 900){
           number = 0;
           messageLCD("0     ", 0, 1);
-        }
+        } 
         irrecv.resume();
       }
     }
@@ -919,22 +824,25 @@ void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
   int drainDuration = 0.25 * cycleDuration;
   lavagem(washDuration, motorSpeed);
   lavagem(rinseDuration, (motorSpeed-5));
-  //enxaguamento(rinseDuration, motorSpeed);
+  
   centrifugacao(spinDuration, motorSpeed);
   descarga(drainDuration, motorSpeed);
 
   digitalWrite(greenLed, LOW);
-
-  for(int k = 0; k < 3; k++){
-    tone(buzzPin, 1000); // Send 1KHz sound signal...
-    delay(1000);        // ...for 1 sec
+  
+  
+    NewTone(buzzPin, 1000); // Send 1KHz sound signal...
+    delay(1000);    
+    noNewTone(buzzPin);     // Stop sound...   
+     /*// ...for 1 sec
      tone(buzzPin, 700); // Send 1KHz sound signal...
     delay(1000);        // ...for 1 sec
      tone(buzzPin, 500); // Send 1KHz sound signal...
     delay(1000);        // ...for 1 sec
     noTone(buzzPin);     // Stop sound...
-    delay(1000); 
-  }
+    delay(1000); */
+
+  
 
 }
     
