@@ -56,14 +56,13 @@ int inThreeM = 9;
 int inFourM = 8;
 
 //Pin do buzzer
-int buzzPin;
+int buzzPin = 12;
 
 //Pins de conexão com os LEDs
-int greenLed;
+int greenLed = 1;
 //o power led é vermelho
-int powerLed;
-int redLed;
-int blueLed;
+int redLed = 0;
+int blueLed = 2;
 
 /*
  * Pins de conexão com o LCD, que vai ser utilizado com o
@@ -99,6 +98,8 @@ int temperature;
 int rotations;
 int tempoFuncionamento;
 
+
+
 //Boolean que indica se o produto(s) para a lavagem já foram introduzidos
 boolean product = false;
 
@@ -132,7 +133,8 @@ int threeDig;
 int fourDig;
 
 
-
+long cycleTime;
+long cycleTimeEnd;
 
 
 
@@ -221,7 +223,6 @@ void setup() {
 
   //definição do pin digital para cada led
   pinMode(greenLed, OUTPUT);
-  pinMode(powerLed, OUTPUT);
   pinMode(redLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
   //definição do pin digital do sensor de IV
@@ -245,22 +246,18 @@ void setup() {
 
    // Mensagem de inicio da máquina
   messageLCD("Bem Vindo!",3,0);
-  delay(2000);
+  delay(100);
   lcd.clear();
 
   // Apresentação do menu principal e respetivas opções
   messageLCD("Menu",5,0); 
-  delay(2000);
+  delay(100);
   lcd.clear();
 
 
   
   // Velocidade inicial do motor (MAX 100)
   // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
-
-
-
-  Serial.begin(9600);
   
 }
 
@@ -290,7 +287,7 @@ void loop() {
   //Deslocação do texto no ecrã, para o utilizador conseguir ver
   moveDisplay(9, 100);
   // delay na transição entre a apresentação dos programas
-  delay(500);
+  delay(100);
   
   messageLCD("  Programas   Programas  ", 0, 0);
   messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
@@ -310,7 +307,7 @@ void loop() {
       lcd.clear();
       messageLCD("Rapidos       Rapidos        Rapidos        Rapidos        Rapidos",0,0);
       messageLCD("1-Rapido (Pre.def) 2-Rapido (20 C) 3-Rapido (40 C) 4-Rapido (60 C)",0,0);
-      moveDisplay(9, 1000);
+      moveDisplay(9, 100);
       num = IRrequest();
 
       switch (num){
@@ -323,7 +320,9 @@ void loop() {
           800            ----->  12
           */
           motorSpeed = 12;
-          cycleDuration = 60;
+          cycleDuration = 170;
+          cycleTime = (long) cycleDuration;
+          cycleTimeEnd = millis() + cycleTime*1000;
           temperature = 30;
           cicloDeLavagem(motorSpeed, cycleDuration, temperature);      
           break;
@@ -380,6 +379,7 @@ void loop() {
 
           motorSpeed = 18;
           cycleDuration = 7.5; // 225 min na datasheet correspondem a 7.5 min no stepper
+          
           temperature = 40;
           cicloDeLavagem(motorSpeed, cycleDuration, temperature);
           break;
@@ -552,18 +552,59 @@ void progMachine (int timeMax, int speedMov){
  * de 1,5 min com 55296 steps.
  */
  
-// Lavagem 
-void lavagem (int timeMax, int speedMov){
-  Serial.println(speedMov);
-  myStepper.setSpeed(speedMov);
-  long a = 2048L;
-  long steps = a * speedMov * timeMax / 60;
-  Serial.println("steps");
-  Serial.println(steps);
-  for(int i = 0; i < steps; i += 100){
-    myStepper.step(100);
+
+/*Função que calcula o tempo que falta para acabar uma lavagem e 
+* apresentar no ecrã
+*/
+
+void printTimeLeft(){
+
+  long timeLeft = cycleTimeEnd - millis();
+  String printTime;
+  String minuteStr;
+  
+  long hourLeft = timeLeft/60000;
+
+  if(hourLeft < 0) {
+    hourLeft = 0;
   }
+
+  long minuteLeft = (timeLeft - hourLeft*60000)/1000;
+  
+  if(minuteLeft < 0 && hourLeft == 0) {
+    minuteLeft = 0 ;
+  }
+
+  if(minuteLeft < 10) {
+    minuteStr = "0" + String(minuteLeft);
+  } else {
+    minuteStr = String(minuteLeft);
+  }
+
+
+
+  printTime = String(hourLeft) + ":" + minuteStr;
+  messageLCD(printTime, 9,1);
+
+ }
+
+// Lavagem 
+void  lavagem (int timeMax, int speedMov){
+  
+  myStepper.setSpeed(speedMov);
+  int deltaStep = 100;
+
+  long runTime = ((long) timeMax)*1000 + millis();
+
+  while(runTime > millis()){
+    myStepper.step(deltaStep);
+    printTimeLeft();
+    
+  }
+  
 }
+
+
 
 // Enxaguamento
 void enxaguamento (int timeMax, int speedMov){
@@ -587,10 +628,11 @@ void centrifugacao (int timeMax, int speedMov){
   {
     myStepper.setSpeed(i);
     steps = revSteps * i * timeMax / (3 * 3 * 60);
-    Serial.println("steps1");
-    Serial.println(steps);
+ 
     for(int i = 0; i < steps; i += 100){
       myStepper.step(100);
+      printTimeLeft();
+
     }
   }
   // o motor desacelera clockwise até parar
@@ -598,10 +640,10 @@ void centrifugacao (int timeMax, int speedMov){
   {
     myStepper.setSpeed(i);
     steps = revSteps * i * timeMax / (3 * 3 * 60);
-    Serial.println("steps2");
-    Serial.println(steps);
+
     for(int i = 0; i < steps; i += 100){
       myStepper.step(100);
+      printTimeLeft();
     }
   }
   // o motor acelera counterclockwise até atingir velocidade máxima
@@ -609,10 +651,10 @@ void centrifugacao (int timeMax, int speedMov){
   {
     myStepper.setSpeed(i);
     steps = revSteps * i * timeMax / (3 * 3 * 60);
-    Serial.println("steps3");
-    Serial.println(steps);
+
     for(int i = 0; i < steps; i += 100){
       myStepper.step(-100);
+      printTimeLeft();
     }
   }
 }
@@ -629,6 +671,7 @@ void descarga (int timeMax, int speedMov){
     steps = revSteps * i * timeMax / (3 * 60);
     for(int i = 0; i < steps; i += 100){
       myStepper.step(-100);
+      printTimeLeft();
     }
   }
 }
@@ -774,15 +817,19 @@ void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
   lcd.setCursor(15,1);
   lcd.write(byte(0));
   messageLCD("Início da lavagem!",0,0);
+  digitalWrite(greenLed, HIGH);
   // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
   int washDuration = 0.25 * cycleDuration;
   int rinseDuration = 0.25 * cycleDuration;
   int spinDuration = 0.25 * cycleDuration;
   int drainDuration = 0.25 * cycleDuration;
   lavagem(washDuration, motorSpeed);
-  enxaguamento(rinseDuration, motorSpeed);
+  lavagem(rinseDuration, motorSpeed);
+  //enxaguamento(rinseDuration, motorSpeed);
   centrifugacao(spinDuration, motorSpeed);
   descarga(drainDuration, motorSpeed);
+
+  digitalWrite(greenLed, LOW);
 }
     
     
