@@ -135,6 +135,7 @@ int fourDig;
 
 long cycleTime;
 long cycleTimeEnd;
+long runTime;
 
 
 
@@ -156,6 +157,7 @@ Stepper myStepper(stepsPerRevolution, inFourM, inTwoM, inThreeM, inOneM);
 // Variáveis do motor de passo 
 
 int stepCount = 0;  // number of steps the motor has taken
+int deltaStep = 100;
 int motorSpeed = 0;
 int halfSpeed = 0;
 int halfPotentiometer = 511; //ponto médio do potenciometrio
@@ -308,19 +310,19 @@ void loop() {
       messageLCD("      Rapidos         Rapidos      ", 0, 0);
       messageLCD(" 1-Rapido (Pre.def) 2-Rapido (20 C)", 0, 1);
       // REMOV - Delay no início da apresentação - 
-      delay(500);
+      delay(10);
     
       //Deslocação do texto no ecrã, para o utilizador conseguir ver
-      moveDisplay(19, 500);
+      moveDisplay(19, 10);
       // delay na transição entre a apresentação dos programas
-      delay(500);
+      delay(10);
       
       messageLCD("      Rapidos         Rapidos      ", 0, 0);
       messageLCD(" 3-Rapido (40 C)    4-Rapido (60 C)", 0, 1);
       // delay no início da apresentação
-      delay(500);
+      delay(10);
     
-      moveDisplay(19, 500);
+      moveDisplay(19, 10);
       
       num = IRrequest();
 
@@ -334,9 +336,7 @@ void loop() {
           800            ----->  12
           */
           motorSpeed = 12;
-          cycleDuration = 170;
-          cycleTime = (long) cycleDuration;
-          cycleTimeEnd = millis() + cycleTime*1000;
+          cycleDuration = 10;
           temperature = 30;
           cicloDeLavagem(motorSpeed, cycleDuration, temperature);      
           break;
@@ -432,17 +432,12 @@ void loop() {
       break;
     
     default:
-      Serial.print(" unknown button   ");
-      Serial.println(results.value, HEX);
+      lcd.clear();
+      messageLCD("Opcaoo invalida.", 0, 0);
+      delay(1000);
+      
   }
-  /*
-  lcd.setCursor(0, 0);
-  lcd.print("Menu       Menu     Menu     Menu  Menu ");
-  lcd.print("1-Lavagens  2-Cenfriguar 3-Torcer   4-EN");
-  delay(500);
-  lcd.scrollDisplayLeft();
-  delay(100);
-  */
+
 }
 
 
@@ -611,9 +606,9 @@ void printTimeLeft(){
 void  lavagem (int timeMax, int speedMov){
   
   myStepper.setSpeed(speedMov);
-  int deltaStep = 100;
+  deltaStep = 100;
 
-  long runTime = ((long) timeMax)*1000 + millis();
+  runTime = ((long) timeMax)*1000 + millis();
 
   while(runTime > millis()){
     myStepper.step(deltaStep);
@@ -621,8 +616,8 @@ void  lavagem (int timeMax, int speedMov){
     
   }
   
+  
 }
-
 
 
 // Enxaguamento
@@ -638,48 +633,100 @@ void enxaguamento (int timeMax, int speedMov){
   }
 }
 
-void centrifugacao (int timeMax, int speedMov){
-  long revSteps = 2048L;
+
+
+
+void rotationDirection(int speedMov, boolean speedUp, boolean toRight){
   
-  long steps;
-  // o motor acelera clockwise até atingir a velocidade máxima
-  for (int i = 0; i <= speedMov; i = i + (speedMov/3))
-  {
-    myStepper.setSpeed(i);
-    steps = revSteps * i * timeMax / (3 * 3 * 60);
- 
-    for(int i = 0; i < steps; i += 100){
-      myStepper.step(100);
-      printTimeLeft();
+  if(toRight) {
+    deltaStep = 100;
+  } else {
+    deltaStep = -100;
+  }
+
+
+  if(speedUp){
+
+    for (int i = 3; i <= speedMov; i = i + (speedMov/3))
+    {
+      
+    
+      myStepper.setSpeed(i);
+      for(int j = 0; j<= 4; j++){
+        myStepper.step(deltaStep);
+        printTimeLeft();
+      }
+      
+    }
+    
+  } else {
+
+    for (int i = speedMov; i > 3; i = i - (speedMov/3))
+      {
+        myStepper.setSpeed(i);
+        
+      for(int j = 0; j<= 4; j++){
+        myStepper.step(deltaStep);
+        printTimeLeft();
+      }
+        
+      }
+
+  }
+
+}
+
+
+void centrifugacao (int timeMax, int speedMov){
+
+  runTime = ((long) timeMax)*1000 + millis();
+  
+
+  while(runTime > millis()) {
+
+    for(int rotationType = 0; rotationType < 4; rotationType++){
+
+      switch (rotationType){
+
+        case 0:
+          /* code */
+          rotationDirection(speedMov, false, true);
+          break;
+
+        case 1:
+        /* code */
+          rotationDirection(speedMov, true, false);
+          break;
+
+        case 2:
+          /* code */
+          rotationDirection(speedMov, false, false);
+          break;
+
+        case 3:
+        /* code */
+          rotationDirection(speedMov, true, true);
+          break;
+        
+        default:
+          break;
+      }
+
+      if(millis() > runTime) {
+        break;
+      }
 
     }
-  }
-  // o motor desacelera clockwise até parar
-  for (int i = speedMov; i >= 0; i = i - (speedMov/3))
-  {
-    myStepper.setSpeed(i);
-    steps = revSteps * i * timeMax / (3 * 3 * 60);
 
-    for(int i = 0; i < steps; i += 100){
-      myStepper.step(100);
-      printTimeLeft();
-    }
-  }
-  // o motor acelera counterclockwise até atingir velocidade máxima
-  for (int i = 0; i <= speedMov; i = i + (speedMov/3))
-  {
-    myStepper.setSpeed(i);
-    steps = revSteps * i * timeMax / (3 * 3 * 60);
+    
 
-    for(int i = 0; i < steps; i += 100){
-      myStepper.step(-100);
-      printTimeLeft();
-    }
   }
+
 }
 
 
 void descarga (int timeMax, int speedMov){
+  messageLCD("A terminar...",0,0);
   long revSteps = 2048L;
   
   long steps;
@@ -688,6 +735,7 @@ void descarga (int timeMax, int speedMov){
   {
     myStepper.setSpeed(i);
     steps = revSteps * i * timeMax / (3 * 60);
+    
     for(int i = 0; i < steps; i += 100){
       myStepper.step(-100);
       printTimeLeft();
@@ -827,6 +875,7 @@ void progMaquina(int motorSpeed, int temperature, int infLim, int supLim)
   lcd.clear();
   cont1 = 0;
   num = infLim;
+
   while(cont1 == 0 || (num < infLim || num > supLim))
   {
     cont1++;
@@ -847,27 +896,46 @@ void progMaquina(int motorSpeed, int temperature, int infLim, int supLim)
       
     num = IRrequest();
   }
-  cicloDeLavagem(motorSpeed, num*2, temperature);            
+
+  
+  
+  cicloDeLavagem(motorSpeed, num, temperature);            
 }
 
 void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
 { 
+  lcd.clear();
   lcd.setCursor(15,1);
   lcd.write(byte(0));
-  messageLCD("Início da lavagem!",0,0);
+  messageLCD("A lavar...",0,0);
   digitalWrite(greenLed, HIGH);
+
+
+  cycleTimeEnd = millis() + ( (long) cycleDuration)*1000;
   // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
   int washDuration = 0.25 * cycleDuration;
   int rinseDuration = 0.25 * cycleDuration;
   int spinDuration = 0.25 * cycleDuration;
   int drainDuration = 0.25 * cycleDuration;
   lavagem(washDuration, motorSpeed);
-  lavagem(rinseDuration, motorSpeed);
+  lavagem(rinseDuration, (motorSpeed-5));
   //enxaguamento(rinseDuration, motorSpeed);
   centrifugacao(spinDuration, motorSpeed);
   descarga(drainDuration, motorSpeed);
 
   digitalWrite(greenLed, LOW);
+
+  for(int k = 0; k < 3; k++){
+    tone(buzzPin, 1000); // Send 1KHz sound signal...
+    delay(1000);        // ...for 1 sec
+     tone(buzzPin, 700); // Send 1KHz sound signal...
+    delay(1000);        // ...for 1 sec
+     tone(buzzPin, 500); // Send 1KHz sound signal...
+    delay(1000);        // ...for 1 sec
+    noTone(buzzPin);     // Stop sound...
+    delay(1000); 
+  }
+
 }
     
     
