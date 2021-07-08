@@ -254,11 +254,6 @@ void setup() {
   delay(100);
   lcd.clear();
 
-  // Apresentação do menu principal e respetivas opções
-  messageLCD("Menu",5,0); 
-  delay(100);
-  lcd.clear();
-
 
   
   // Velocidade inicial do motor (MAX 100)
@@ -284,6 +279,24 @@ void loop() {
 
   
   lcd.clear();
+  
+  while(num != -1){
+    messageLCD(" Coloque o detergente e prima CH", 0, 0);
+    moveDisplay(16, 500);
+    num = IRrequest();
+    /*
+     * O valor -1 devolvido por IRrequest foi arbitrariamente definido para servir de bandeira à colocação de detergente
+     * Se num = -1 o detergente foi colocado e o programa segue,
+     * caso contrário o detergente não foi colocado e o programa
+     * volta a solicitar a sua inserção.
+     */
+  }
+
+    // Apresentação do menu principal e respetivas opções
+  messageLCD("Menu",5,0); 
+  delay(100);
+  lcd.clear();
+  
   messageLCD("  Programas   Programas  ", 0, 0);
   messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
   // REMOV - Delay no início da apresentação - 
@@ -691,10 +704,18 @@ int IRrequest (){
       
       if (irrecv.decode(&results)){   
        
-        switch(results.value){
+        switch(results.value){        
           case 0xFFC23D:  
             Serial.println(" PLAY/PAUSE     "); 
 
+            break;
+
+          case 0xFF629D:  
+            Serial.println(" CH             ");
+            number = -1;
+            
+            messageLCD("CH", 0, 1);
+            delay(1000);
             break;
             
           case 0xFF6897:
@@ -769,8 +790,14 @@ int IRrequest (){
     }
 
     lcd.clear();
-    messageLCD(String(number), 0, 1);
-    delay(1000);
+    if(number == -1){
+      messageLCD("CH", 0, 1);
+      delay(1000);
+    }
+    else{
+      messageLCD(String(number), 0, 1);
+      delay(1000);
+    }
     
     return number;
 }
