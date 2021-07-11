@@ -688,7 +688,7 @@ void productIn (){
     if(num = 0xFF629D){
       product = true;      
     }
-    
+
   }
 
 
@@ -859,25 +859,25 @@ int IRrequest (){
 
 
     while(results.value != 0xFFC23D){
-      
       if (irrecv.decode(&results)){   
        
+       //Para evitar somar número negativos
+       if(number < 0) {
+         number = 0;
+       }
+        lcd.clear();
         switch(results.value){ 
           case 0xFF22DD:
-            Serial.println(" FAST REWIND    ");  
+          //Tecla Rewind
             number = -3;
-
-            break;
-              
-          case 0xFFC23D:  
-            Serial.println(" PLAY/PAUSE     "); 
+            messageLCD("Voltar atras?", 0, 1);
 
             break;
 
           case 0xFF629D:  
-            Serial.println(" CH             ");
+          //Tecla CH
             number = -1;
-            
+            messageLCD("Detergente colocado? Confirme.", 0, 1);
             break;
             
           case 0xFF6897:
@@ -947,8 +947,12 @@ int IRrequest (){
           number = 0;
           messageLCD("0     ", 0, 1);
         } 
+
+
         irrecv.resume();
+
       }
+
     }
 
     lcd.clear();
