@@ -862,10 +862,7 @@ int IRrequest (){
       if (irrecv.decode(&results)){   
        
        //Para evitar somar número negativos
-       if(number < 0) {
-         number = 0;
-       }
-        lcd.clear();
+       
         switch(results.value){ 
           case 0xFF22DD:
           //Tecla Rewind
