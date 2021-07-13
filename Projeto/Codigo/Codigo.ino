@@ -1,39 +1,15 @@
-
-
 /*
  * Projeto de PCI 2021 - PL2 - Grupo 2
  * Implementação de uma máquina lavar.
  *                          26/06/2021
  */
 
-//bibliotecas usadas
+//Bibliotecas usadas
 
 #include <Stepper.h>
 #include <LiquidCrystal_74HC595.h>
 #include <IRremote.h>
 #include <NewTone.h>
-
-
-
-/*---------------------------------
- * --------Simbolos do LCD---------
- * --------------------------------
- */
-byte lock[8] = {0b00100 ,
-                0b01010 ,
-                0b01010 ,
-                0b11111 ,
-                0b11111 ,
-                0b11111 ,
-                0b11111 ,
-                0b00000};
-
-
-
-
-
-
-
 
 
 
@@ -46,7 +22,11 @@ byte lock[8] = {0b00100 ,
  */
 
 
-int tempAlog = A1;
+int sensorTemp = A0;
+
+
+
+
 
 /*---------------------------------
  * --------Pins digitais-----------
@@ -63,9 +43,8 @@ int buzzPin = 7;
 
 //Pins de conexão com os LEDs
 int greenLed = 1;
-//o power led é vermelho
 int redLed = 0;
-int blueLed = 2;
+int blueLed = 12;
 
 /*
  * Pins de conexão com o LCD, que vai ser utilizado com o
@@ -94,22 +73,6 @@ int dataPinSeven = 7;   //Data Pin 7      ----> 7 - Q7 - parallel data output
 int IRPin = 6;
 
 
-//Tecla do comando selecionada
-
-int num; // numero final comando
-int temperature;
-int rotations;
-
-
-
-
-//Boolean que indica se o produto(s) para a lavagem já foram introduzidos
-boolean product = false;
-
-
-
-
-
 
 
 
@@ -120,27 +83,57 @@ boolean product = false;
  * ---------------------------------------------
  */
 
-// Tempo do ciclo de lavagem
-int timeCounter;
-int timeMax;
-boolean timeCheck = false;
+//-------------Variaveis int-------------------
+
+
+//Armazena o tempo de um tipo de lavagem
 int cycleDuration;
 
- //Conta o número de dígitos inseridos pelo utilizador no LCD
-int cont1;
- //Variáveis envolvidas na atualização do número final no comando
-int tempNum;
-int oneDig;
-int twoDig;
-int threeDig;
-int fourDig;
+//Tecla do comando selecionada
+int num;
+
+//Variavel que contem a temperatura maxima de um programa
+
+int tempMaxLimit = 31;
+int tempMinLimit = 15;
 
 
-long cycleTime;
+//-------------Variaveis long------------------
+
+/*A explicação da variavel cycleTimeEnd requer alguma clareza. 
+* Objetivo desta variavel é armazenar o milisegundo em que um programa de 
+* lavagem vai terminar.
+* O controlador do arduino, o ATmega contem 3 Timers ou "relógios internos".
+* Os timers contam desde o ínicio do funcionamento do Arduino. O registadores
+* designados para os timers são atualizados pelo o clock. O valor guardado na 
+* memória é um long atualizado a cada milisegundo.
+* Dois destes são de curta duração, que após umas horas dão reset e começam a
+* contar do zero. O terceiro timer tem um período de aproximadamente 56 dias.
+* A variavel é obtida somando o cycleDuration ao tempo atual (função millis).
+* Ora, para contar o tempo que falta num programa é necessário saber a que 
+* milisegundo este vai terminar. Subtraindo o tempo atual armazenado no 
+* registador do timer ao milisegundo em que o programa vai terminar, é 
+* possível obter o tempo que falta para o programa terminar.
+*/
 long cycleTimeEnd;
+
+/*Cada programa tem 4 fases: lavagem, exaguamento, centrifugação e descarga.
+* Cada fase tem uma fração de tempo atribuida para respeitar o tempo esolhido
+* pelo o utilizador. A variavel runTime à semelhança da var cycleTimeEnd
+* define o milisegundo em uma fase irá terminar.
+*/
 long runTime;
 
 
+//-------------Variaveis boolean-------------------
+
+//Booleana para controlos de fluxo de voltar a atrás
+boolean goBack;
+//Booleana para verificar se uma opcão selecionada é válida.
+boolean invalidOption;
+
+//Boolean que indica se o produto(s) para a lavagem já foram introduzidos
+boolean product;
 
 /*----------------------------------------------
  * --------Definições do motor de passo---------
@@ -148,33 +141,32 @@ long runTime;
  */
 
  
-const int stepsPerRevolution = 2048;  // change this to fit the number of steps per revolution
-// for your motor
+const int stepsPerRevolution = 2048; 
 
+//Ligação do driver do motor de passo ao arduino
 //IN1 ----> 11
 //IN2 ----> 10
 //IN3 ----> 9
 //IN4 ----> 8
+
+//Objeto stepper que controla o motor de passo
 Stepper myStepper(stepsPerRevolution, inFourM, inTwoM, inThreeM, inOneM);
 
-// Variáveis do motor de passo 
-
-int stepCount = 0;  // number of steps the motor has taken
+// -------Variáveis do motor de passo ------------
+/*Conjuto de passos mais pequeno a ser usado neste programa. 
+* Para manter o programa uniforme, além disso 100 passos é
+* número suficientemente baixo para evitar erros nos cálculos
+* de tempo restante, dado que o método .step() ocupa todo o
+* tempo de cpu enquanto os passos não forem terminados.
+*/
 int deltaStep = 100;
+//Velocidade do motor
 int motorSpeed = 0;
-int halfSpeed = 0;
-int halfPotentiometer = 511; //ponto médio do potenciometrio
-int sensorReading = 0;
-//int speedI = 64;
 
-// Tempo do ciclo de lavagem
-/*
- * Contém o valor do tempo do ciclo de lavagem (timeMax);
- * Conta o tempo que falta para acabar a lavagem (timeCounter);
- * Verifica se o tempo já terminou.
- * Para fins demonstrativos utilizamos a seguinte escala temporal:
- * 30 min -----> 1 min
- */
+
+
+
+
 
 
 /*-----------------------------------
@@ -186,30 +178,51 @@ int sensorReading = 0;
 //https://github.com/matmunk/LiquidCrystal_74HC595
 //https://playground.arduino.cc/Main/LiquidCrystal/
 
-
+//Objeto que controla o LCD
 LiquidCrystal_74HC595 lcd(dataPin, clockPin,latchPin, registerSelect, enableLCD, dataPinFour,dataPinFive, dataPinSix, dataPinSeven);
 
 
+/*---------------------------------
+ * --------Simbolos do LCD---------
+ * --------------------------------
+ */
+
+/*Array que representa o simbolo do cadeado para informar o utilizador que 
+  que a maquina de lavar está a funcionar e nao é possível alterar o programa.
+*/
+byte lock[8] = {0b00100 ,
+                0b01010 ,
+                0b01010 ,
+                0b11111 ,
+                0b11111 ,
+                0b11111 ,
+                0b11111 ,
+                0b00000};
 
 
+//Simbolo do gelo, para quando a temperatura está abaixo da temperatura miníma
 
-
-
+byte ice[8] =  {0b00100 ,
+                0b10101 ,
+                0b01110 ,
+                0b00100 ,
+                0b11111 ,
+                0b01110 ,
+                0b10101 ,
+                0b00100 };
 
 
 /*----------------------------------------
  * --------Definições do Infrared---------
  * ---------------------------------------
  */
+
+//Objeto que permite a interação com o sensor de infra-vermelhos
 IRrecv irrecv(IRPin);
 decode_results results;
 
-//Boolean que indica se um código IR foi recebido (true) ou não (false)
 //https://www.pjrc.com/teensy/td_libs_IRremote.html
-boolean receiveIR;
 
-
-int comandOption = results.value;
 
 
 
@@ -223,48 +236,45 @@ int comandOption = results.value;
  * -------------------------------------------
  */
 void setup() {
-  // put your setup code here, to run once:
 
-
-  //definição do pin digital para cada led
+  //Definição do pin digital para cada led
   pinMode(greenLed, OUTPUT);
   pinMode(redLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
-  //definição do pin digital do sensor de IV
+
+  //Definição do pin digital do sensor de Infra-vermelhos
   pinMode(IRPin, INPUT);
 
- //definição do pin digital do buzzer passivo
+ //Definição do pin digital do buzzer passivo
   pinMode(buzzPin, OUTPUT);
 
   // Inicialização do LCD
   lcd.begin(16, 2);
+  /*O simbolos são associados a um char com index para ser
+  * mais facéis de imprimir estes no LCD
+  */
+  lcd.createChar(0,lock);
+  lcd.createChar(1,ice);
 
   //Inicialização do sensor de infra-vermelhos
   irrecv.enableIRIn();
 
-  lcd.createChar(0,lock);
+ 
 
-  /*--------------------------------------------
+/*--------------------------------------------
  * ----------------Apresentação-----------------
  * ---------------------------------------------
  */
 
    // Mensagem de inicio da máquina
   messageLCD("Bem Vindo!",3,0);
-  delay(100);
+  delay(1000);
   lcd.clear();
-
-  // Apresentação do menu principal e respetivas opções
-  messageLCD("Menu",5,0); 
-  delay(100);
-  lcd.clear();
-
-
-  
-  // Velocidade inicial do motor (MAX 100)
   // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
+
   
 }
+
 
 
 
@@ -284,55 +294,116 @@ void loop() {
 
   
   lcd.clear();
-  messageLCD("  Programas   Programas  ", 0, 0);
-  messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
-  // REMOV - Delay no início da apresentação - 
-  delay(100);
-
-  //Deslocação do texto no ecrã, para o utilizador conseguir ver
-  moveDisplay(9, 100);
-  // delay na transição entre a apresentação dos programas
-  delay(100);
   
-  messageLCD("  Programas   Programas  ", 0, 0);
-  messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
-  // delay no início da apresentação
-  delay(100);
+  // Apresentação do menu principal e respetivas opções
+  messageLCD("Menu",5,0); 
+  delay(500);
+  lcd.clear();
 
-  moveDisplay(9, 100);
 
-  messageLCD("Selecione o programa desejado:", 0, 0);
+  while(true)
+  {
+    lcd.clear();
+    delay(500);
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  1-Rapidos  ", 0, 1);
+    // REMOV - Delay no início da apresentação - 
+    delay(500);
+    lcd.clear();
     
-  num = IRrequest();
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  2-Delicados ", 0, 1);
+    delay(500);
+    lcd.clear();
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  3-Algodoes  ", 0, 1);
+    delay(500);
+    lcd.clear();
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  4-Sintéticos ", 0, 1);
+    delay(500);
+    lcd.clear();
+    /*
+    // delay na transição entre a apresentação dos programas
+    delay(100);
+    
+    messageLCD("  Programas   Programas  ", 0, 0);
+    messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
+    // delay no início da apresentação
+    delay(100);
+  
+    moveDisplay(9, 100);
+    */
+    messageLCD("Selecione o programa desejado:", 0, 0);
+    delay(500);
+    num = IRrequest();
 
+    if( (num > 0) && (num < 5)){
+      break;
+
+
+    } else if(num > 5) {
+      lcd.clear();
+      messageLCD("Opcao invalida.", 0, 0);
+      delay(1000);
+    }
+
+  }
+  
   switch (num){ 
     // Opção- Rápidos  
-    
-    case 1:  
-      lcd.clear();
-      messageLCD("      Rapidos         Rapidos      ", 0, 0);
-      messageLCD(" 1-Rapido (Pre.def) 2-Rapido (20 C)", 0, 1);
-      // REMOV - Delay no início da apresentação - 
-      delay(10);
-    
-      //Deslocação do texto no ecrã, para o utilizador conseguir ver
-      moveDisplay(19, 10);
-      // delay na transição entre a apresentação dos programas
-      delay(10);
-      
-      messageLCD("      Rapidos         Rapidos      ", 0, 0);
-      messageLCD(" 3-Rapido (40 C)    4-Rapido (60 C)", 0, 1);
-      // delay no início da apresentação
-      delay(10);
-    
-      moveDisplay(19, 10);
-      
-      num = IRrequest();
 
+    case 1:  
+      goBack = false;
+      num = 0;
+
+      while(!goBack)
+      {
+        lcd.clear();
+        messageLCD("      Rapidos         Rapidos      ", 0, 0);
+        messageLCD(" 1-Rapido (Pre.def) 2-Rapido (20 C)", 0, 1);
+        // REMOV - Delay no início da apresentação - 
+        delay(200);
+      
+        //Deslocação do texto no ecrã, para o utilizador conseguir ver
+        moveDisplay(19, 300);
+        // delay na transição entre a apresentação dos programas
+        delay(200);
+        
+        messageLCD("      Rapidos         Rapidos      ", 0, 0);
+        messageLCD(" 3-Rapido (40 C)    4-Rapido (60 C)", 0, 1);
+        // delay no início da apresentação
+        delay(200);
+      
+        moveDisplay(19, 300);
+        
+        messageLCD("Selecione o programa desejado:", 0, 0);
+        delay(500);
+        num = IRrequest();
+
+
+        if( (num > 0) && (num < 5)){
+          goBack = true;
+          lcd.clear();
+          messageLCD("Programa: " + String(num), 0, 0);
+          delay(1000);
+        } else if( num > 5) {
+
+          lcd.clear();
+          messageLCD("Opcao invalida.", 0, 0);
+          delay(1000);
+
+        } 
+
+        
+
+      }
+      
       switch (num){
         // Rápido (30 min) - tecla 1
         case 1:
-        
+
+          productIn();
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
@@ -340,39 +411,48 @@ void loop() {
           */
           motorSpeed = 12;
           cycleDuration = 10;
-          temperature = 30;
-          cicloDeLavagem(motorSpeed, cycleDuration, temperature);      
+          tempMaxLimit = 30;
+          cicloDeLavagem(motorSpeed, cycleDuration, tempMaxLimit);
+          invalidOption = false;      
           break;
   
         // Rápido (T = 20ºC) - tecla 2
         case 2: 
 
+          productIn();
           progMaquina(12, 20, 15, 35);
+          invalidOption = false;
           break;
 
         // Rápido (T = 40ºC) - tecla 3
         case 3: 
 
+          productIn();
           progMaquina(18, 40, 15, 35);
+          invalidOption = false;
           break;
 
         // Rápido (T = 60ºC) - tecla 4
         case 4: 
-        
+
+          productIn();
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
           1000           ----->  15
           */
           progMaquina(15, 60, 15, 35);
+          invalidOption = false;
           break;
       }
-      
-      break;
+    
+    break;
       
     // Opção- Delicados 
     
     case 2: 
+    
+      productIn();
       /*
       rpm (máquina)          rpm (stepper)
       1200           ----->  18
@@ -384,74 +464,141 @@ void loop() {
       
     // Opção- Algodões
     
-    case 3: 
-      lcd.clear();
-      messageLCD(" Algodoes     Algodoes      Algodoes",0,0);
-      messageLCD(" 1-Algodao diario 2-Algodao (225min)",0,1);
-      moveDisplay(20, 500);
-      num = IRrequest();
-        switch (num){
+    case 3:    
+           
+      goBack = false;
+      num = 0;
+      while(!goBack){
+        
+        lcd.clear();
+        messageLCD(" Algodoes     Algodoes      Algodoes",0,0);
+        messageLCD(" 1-Algodao diario 2-Algodao (225min)",0,1);
+        moveDisplay(20, 300);
+        
+        messageLCD("Selecione o programa desejado:", 0, 0);
+        delay(500);
+        num = IRrequest();
+
+
+        if( (num > 0) && (num < 3)){
+          goBack = true;
+          lcd.clear();
+          messageLCD("Programa: " + String(num), 0, 0);
+          delay(1000);
+        } else if( num > 3) {
+
+          lcd.clear();
+          messageLCD("Opcao invalida.", 0, 0);
+          delay(1000);
+
+        } 
+      }
+
+      switch (num){
         // Algodão diário - tecla 1
         case 1:
 
+          productIn();
           progMaquina(18, 30, 165, 225);// 165 min = 2 3/4 h e 225 min = 3 3/4 h
+          invalidOption = false;
           break;
 
         // Algodão (225 min) - tecla 2
         case 2:
 
+          productIn();
           motorSpeed = 18;
           cycleDuration = 450; // 225 min na datasheet correspondem a 450s no stepper
-          temperature = 40;
-          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          tempMaxLimit = 40;
+          cicloDeLavagem(motorSpeed, cycleDuration, tempMaxLimit);
+          invalidOption = false;
           break;
-        }
+      }
+        
+      
+        
       break;
         
     // Opção- Sintéticos
     
     case 4:
-      lcd.clear();
-      messageLCD(" Sinteticos     Sinteticos     Sinteticos",0,0);
-      messageLCD(" 1-Sintetico diario 2-Sintetico (200 min)",0,1);
-      moveDisplay(25, 500);
-      num = IRrequest();
-        switch (num){
-          // Sintético diário - tecla 1
-          case 1:
-  
-            progMaquina(18, 30, 105, 198);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
-            break;
-  
-          // Sintético (200 min) - tecla 2
-          case 2:
-  
-            motorSpeed = 18;
-            cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
-            temperature = 40;
-            cicloDeLavagem(motorSpeed, cycleDuration, temperature);
-            break;
-        }
-      break;
-    
-    default:
-      lcd.clear();
-      messageLCD("Opcao invalida.", 0, 0);
-      delay(1000);
-      
-  }
+      goBack = false;
+      num = 0;
 
+      while(!goBack){
+        
+        lcd.clear();
+        messageLCD(" Sinteticos     Sinteticos     Sinteticos",0,0);
+        messageLCD(" 1-Sintetico diario 2-Sintetico (200 min)",0,1);
+        moveDisplay(25, 300);
+
+        messageLCD("Selecione o programa desejado:", 0, 0);
+        delay(500);
+        num = IRrequest();
+
+        if( (num > 0) && (num < 3)){
+          goBack = true;
+          lcd.clear();
+          messageLCD("Programa: " + String(num), 0, 0);
+          delay(1000);
+        } else if( num > 3) {
+
+          lcd.clear();
+          messageLCD("Opcao invalida.", 0, 0);
+          delay(1000);
+
+        } 
+      }
+
+      
+      switch (num){
+        // Sintético diário - tecla 1
+        case 1:
+
+          productIn();
+          progMaquina(18, 30, 105, 198);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
+        
+          break;
+
+        // Sintético (200 min) - tecla 2
+        case 2:
+
+          productIn();
+          motorSpeed = 18;
+          cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
+          tempMaxLimit = 40;
+          cicloDeLavagem(motorSpeed, cycleDuration, tempMaxLimit);
+          break;
+
+      }
+        
+      
+      break;
+      
+  
+  
+}
 }
 
 
 
 
-/*--------------------------------------------
- * ---------------- Funções ------------------
- * -------------------------------------------
+/*----------------------------------------------------------------------------
+ *----------------------------------------------------------------------------
+ *--------------------------------- Funções ----------------------------------
+ *----------------------------------------------------------------------------
+ *----------------------------------------------------------------------------
+ */
+
+
+
+/*--------------------------------------------------
+ * ---------------- Funções do LCD------------------
+ * -------------------------------------------------
  */
 
  /* Função para imprimir uma mensagem no LCD
+  * Os argumentos são a messagem e o pixel onde começa a mensagem
   */
 
 void messageLCD (String message,  int colsLCD, int rowLCD){
@@ -459,66 +606,25 @@ void messageLCD (String message,  int colsLCD, int rowLCD){
   lcd.print(message);
 }
 
+
+/* Função que move o texto no display, para que o texto demasiado
+* para o ecrã fique visível. O LCD guarda o texto que não se vê 
+* na sua memória. Ou seja, o lcd real tem 16 por 2 pixeis, mas o
+* o virtual tem o dobro.
+* Os argumentos são até que pixeis se quer ver o LCD e o tempo 
+* de espera entre cada deslocação de píxel.
+*/
 void moveDisplay(int maxPixel, int waitTime){
+
   for (int positionCounter = 0; positionCounter < maxPixel; positionCounter++) {
-    // scroll one position left:
     lcd.scrollDisplayLeft();
-    // wait a bit:
-    delay(waitTime); //delay pequeno para testar rapidamente
+
+    delay(waitTime);
   }
+
   lcd.clear();
 
 }
-
-// Indica se os produtos (detergente e amaciador) foram colocados
-boolean productIn (int comandOption, boolean product){
-  
-  // Associa-se esta função à tecla CH do telecomando
-  if(comandOption = 0xFF629D){
-    product = true;      
-  }
-  return product;
-}
-
-
-
-
-/*
- * Métodos responsáveis pela execução do ciclo de lavagem,
- * na ordem: lavagem, enxaguamento, centrifugação e descarga.
- * A lavagem e o enxaguamento consistem na rotação do motor
- * no sentido dos ponteiros do relógio, com o motor a rodar mais
- * rapidamente na lavagem do que no enxaguamento. O método
- * correspondente à centrifugação acelera a rotação do motor 
- * clockwise até atingir a velocidade máxima, desacelera-o
- * até parar, inverte o sentido e acelera-o counterclockwise 
- * até atingir a velocidade máxima. O método correspondente 
- * à descarga apenas desacelera o motor até parar, dando-se 
- * depois a descarga.
- * 
- * O número de steps correspondentes a um dado programa 
- * foram obtidos através da velocidade de rotação do motor e 
- * do tempo de execução do programa da seguinte forma:
- * Considerando que a velocidade de rotação do motor são
- * 18 rpm e o tempo introduzido pelo utilizador são 45 min, 
- * o fator de conversão dita que 45 min --> 1,5 min e tem-se
- * 
- * tempo (s)         rotações
- * 60        ----->  18
- * 90        ----->  27
- * 
- * rotações          steps
- * 1         ----->  2048
- * 27        ----->  55296
- * 
- * Logo, a um programa de 45 min, corresponde uma demonstração
- * de 1,5 min com 55296 steps.
- */
- 
-
-/*Função que calcula o tempo que falta para acabar uma lavagem e 
-* apresentar no ecrã
-*/
 
 void printTimeLeft(){
 
@@ -549,7 +655,156 @@ void printTimeLeft(){
   printTime = String(hourLeft) + ":" + minuteStr;
   messageLCD(printTime, 9,1);
 
+
+
+  int stopTimeInit = millis();
+  IRpause();
+  checkTemp(tempMaxLimit, tempMinLimit);
+  int stopTimeEnd = millis();
+
+  runTime += stopTimeEnd-stopTimeInit;
+  cycleTimeEnd +=  stopTimeEnd-stopTimeInit;
+
+  
+  
+
  }
+
+
+
+
+/*---------------------------------------------------------------
+ * ----------------Controlo do ciclo de lavagem------------------
+ * --------------------------------------------------------------
+ */
+
+
+
+void progMaquina(int motorSpeed, int tempMaxLimit, int infLim, int supLim)     
+{
+  lcd.clear();
+  num = 0;
+  goBack = false;
+
+  int countTries = 0;
+
+  num = infLim;
+
+  while(countTries == 0 || (num < infLim || num > supLim))
+  {
+    countTries++;
+    
+    if (countTries == 1)
+    {
+      messageLCD(" Insira a duracao desejada: ",0,0);
+      moveDisplay(12, 200);
+    }
+
+    else if(countTries > 1 && num != 0)
+    {
+      messageLCD(" Duracao introduzida invalida!",0,0);
+      moveDisplay(14, 200);
+      messageLCD(" Insira a duracao desejada: ",0,0);
+      moveDisplay(12, 200);
+    } 
+      
+    //Se o utilizador quiser voltar atrás, o ciclo é quebrado
+    if(!goBack){
+      num = IRrequest();
+    } else{
+      break;
+    }
+
+  }
+
+  
+  if(!goBack){
+    cicloDeLavagem(motorSpeed, num, tempMaxLimit); 
+  }           
+}
+
+void cicloDeLavagem(int motorSpeed, int  cycleDuration, int tempMaxLimit){ 
+  lcd.clear();
+  lcd.setCursor(15,1);
+  lcd.write(byte(0));
+  messageLCD("A lavar...",0,0);
+  digitalWrite(greenLed, HIGH);
+  //Impede que o programa trave logo após escolher uma opção no menu
+  irrecv.resume();
+
+
+  cycleTimeEnd = millis() + ( (long) cycleDuration)*1000;
+  // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
+  int washDuration = 0.25 * cycleDuration;
+  int rinseDuration = 0.25 * cycleDuration;
+  int spinDuration = 0.25 * cycleDuration;
+  int drainDuration = 0.25 * cycleDuration;
+  lavagem(washDuration, motorSpeed);
+  lavagem(rinseDuration, (motorSpeed-5));
+  
+  centrifugacao(spinDuration, motorSpeed);
+  descarga(drainDuration, motorSpeed);
+
+  digitalWrite(greenLed, LOW);
+  
+  
+    NewTone(buzzPin, 1000); // Send 1KHz sound signal...
+    delay(1000);    
+    noNewTone(buzzPin);     // Stop sound...   
+     /*// ...for 1 sec
+     tone(buzzPin, 700); // Send 1KHz sound signal...
+    delay(1000);        // ...for 1 sec
+     tone(buzzPin, 500); // Send 1KHz sound signal...
+    delay(1000);        // ...for 1 sec
+    noTone(buzzPin);     // Stop sound...
+    delay(1000); */
+
+  
+
+}
+    
+// Indica se o detergente foi colocado
+
+void productIn (){
+
+  product = false;
+
+  while(!product){
+    lcd.clear();
+    messageLCD(" Coloque o detergente e prima CH", 0, 0);
+    moveDisplay(16, 500);
+    IRrequest();
+  }
+
+  lcd.clear();
+  messageLCD(" Detergente colocado. Aguarde.", 0, 0);
+  moveDisplay(14, 500);
+  delay(1000);
+}
+
+
+/*
+ * Métodos responsáveis pela execução do ciclo de lavagem,
+ * na ordem: lavagem, enxaguamento, centrifugação e descarga.
+ * 
+ * A lavagem e o enxaguamento consistem na rotação do motor
+ * no sentido dos ponteiros do relógio, com o motor a rodar mais
+ * rapidamente na lavagem do que no enxaguamento. 
+ * 
+ * O método correspondente à centrifugação acelera a rotação 
+ * do motor clockwise até atingir a velocidade máxima, desacelera-o
+ * até parar, inverte o sentido e acelera-o counterclockwise 
+ * até atingir a velocidade máxima. 
+ * O método correspondente  à descarga apenas desacelera o 
+ * motor até parar, dando-se depois a descarga.
+ * 
+ */
+ 
+
+/*Função que calcula o tempo que falta para acabar uma lavagem e 
+* apresentar no ecrã
+*/
+
 
 // Lavagem 
 void  lavagem (int timeMax, int speedMov){
@@ -563,12 +818,11 @@ void  lavagem (int timeMax, int speedMov){
     myStepper.step(deltaStep);
     printTimeLeft();
     
+    
   }
   
   
 }
-
-
 
 
 void rotationDirection(int speedMov, boolean speedUp, boolean toRight){
@@ -679,25 +933,81 @@ void descarga (int timeMax, int speedMov){
 }
 
 
+
+
+
+/*---------------------------------------------------------------
+ * ----------------Interface com Infra-Vermelhos-----------------
+ * --------------------------------------------------------------
+ */
 int IRrequest (){
     //número que vai ser introduzido pelo o utilizador
     int number = 0; 
 
-    results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
-    //se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las à medida que irrecv.decode(&results) e results.value mudam
+
+    /**O hexadecimal corresponde à tecla Play. Esta tecla serve
+     * para confirmar o número introduzido pelo o utilizador.
+     */
+    results.value = 0xFFC23D; 
+
+    /** O método .resume limpa a booleana do metodo .decode e prepara
+     * o cpu para ler outro código novo enviado pelo comando.
+     * A questão aqui é que se o .resume nao for chamada, o
+     * .decode é sempre verdadeiro, então esta função automa-
+     * ticamente presa no while loop, mesmo que o comando nao
+     * tenha sido premido.
+     
+    irrecv.resume();
+
+    //Um pequeno delay para permitir a receção de Infra-vermelhos 
+    delay(delayCatch);
 
 
-    while(results.value != 0xFFC23D){
-      
-      if (irrecv.decode(&results)){   
-       
-        switch(results.value){
-          case 0xFFC23D:  
-            Serial.println(" PLAY/PAUSE     "); 
+    * O programa fica preso no while loop até a tecla play ser
+     * pressionada. 
+     * Dentro do while loop, o utilizador pode construir números
+     * de 0 até 999. O limite advem do facto de um inteiro nao
+     * puder ser maior que 32767. Assim, evitam-se erros de 
+     * tamanhos nos registadores.
+     * Além disso, nenhum ser humano usa números maior que 500 
+     * para tarefas domésticas.
+     * 
+    */
+
+    
+    boolean catchIR;
+    while(results.value != 0xFFC23D || irrecv.decode(&results)){
+      //Se o comando tiver sido pressionado, entra no if statement
+
+      if(irrecv.decode(&results)){
+        catchIR = true;
+      } else {
+        catchIR = false;
+      }
+
+
+      if (catchIR){   
+       //O comando funciona por hexadecimais que são traduzidos para números ou booleans
+
+        switch(results.value){ 
+          case 0xFF22DD:
+          //Tecla Rewind - Voltar atrás no menu
+            goBack = true;
+            //Quando se carrega rewind, o número que estava a ser construído é eliminado
+            number = 0;
+            messageLCD("Voltar atras?", 0, 1);
 
             break;
+
+          case 0xFF629D:  
+          //Tecla Channel - Detergente colocado
+            //messageLCD("Detergente colocado?", 0, 1);
+            product = true;
+            break;
             
+            //Por ordem: Teclas 0-9
           case 0xFF6897:
+            
             number = number *10 + 0;
             messageLCD(String(number), 0, 1);
             delay(1000);
@@ -754,100 +1064,101 @@ int IRrequest (){
             number = number *10 + 9;
             messageLCD(String(number), 0, 1);
             break;
-        
-          default:
-            Serial.print(" unknown button   ");
-            Serial.println(results.value, HEX);
         }
         
+        //O número introduzido pelo utilizador é maior que 900, então é eliminado
         if(number > 900){
+          //O utilizador pode construir outro número do zero
           number = 0;
           messageLCD("0     ", 0, 1);
         } 
-        irrecv.resume();
-      }
-    }
+        
+        /** Se o utilizador carregar primeiro na tecla rewind, então
+         * a boolean goBack fica verdadeira. Se o utilizador carregar
+         * de seguida num número, então quer dizer que quer entrar 
+         * num programa. Vai existir conflito, portanto, após qualquer
+         * número ser construído, booleana goBack é negativa.
+         * 
+        */
+        if(number > 0){
+          goBack = false;
+          product = false;
+        }
 
-    lcd.clear();
-    messageLCD(String(number), 0, 1);
-    delay(1000);
-    
+        //Reset do objeto de IR para ler novos códigos.
+        irrecv.resume();
+        
+
+      }
+      
+    } 
+    irrecv.resume();
+
     return number;
+     
+    
+    
 }
 
-void progMaquina(int motorSpeed, int temperature, int infLim, int supLim)     
-{
-  lcd.clear();
-  cont1 = 0;
-  num = infLim;
+              
+void IRpause(){
 
-  while(cont1 == 0 || (num < infLim || num > supLim))
-  {
-    cont1++;
-    
-    if (cont1 == 1)
-    {
-      messageLCD(" Insira a duracao desejada: ",0,0);
-      moveDisplay(12, 500);
-    }
+     //número que vai ser introduzido pelo o utilizador
 
-    else
-    {
-      messageLCD(" Duracao introduzida invalida!",0,0);
-      moveDisplay(14, 500);
-      messageLCD(" Insira a duracao desejada: ",0,0);
-      moveDisplay(12, 500);
-    }
+    results.value = 0xFFC23D; 
+
+    while(results.value != 0xFFC23D || irrecv.decode(&results)){
+      //Se o comando tiver sido pressionado, entra no if statement
       
-    num = IRrequest();
+      messageLCD("Paragem.", 0, 1);
+
+      
+      if (irrecv.decode(&results)){   
+       //O comando funciona por hexadecimais que são traduzidos para números ou booleans
+        //Reset do objeto de IR para ler novos códigos.
+        irrecv.resume();
+
+      }
+      
+    } 
+    messageLCD("        ", 0, 1);
+    irrecv.resume();
+}
+    
+    
+/*---------------------------------------------------------------
+ * --------------------Sensor de temperatura---------------------
+ * --------------------------------------------------------------
+ */
+
+     
+void checkTemp(int maxTemp, int minTemp){
+  int tempNow = analogRead(sensorTemp) * 5/(0.01*1023);
+  //messageLCD(String(tempNow), 0, 1);
+
+  if(tempNow > maxTemp) {
+    pinMode(redLed, LOW);
+
+    while(true) {
+      messageLCD("Too hot.", 0, 1);
+      tempNow = analogRead(sensorTemp)* 5/(0.01*1023);
+      if(tempNow < maxTemp) {
+        break;
+      }
+
+    }
+  } else if(tempNow < minTemp) {
+    pinMode(redLed, HIGH);
+    lcd.setCursor(15,0);
+    lcd.write(byte(1));
+  } else {
+    pinMode(redLed, HIGH);
+    lcd.setCursor(15,0);
+    lcd.write(" ");
+    //messageLCD("        ", 0, 1);
   }
 
-  
-  
-  cicloDeLavagem(motorSpeed, num, temperature);            
-}
-
-void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
-{ 
-  lcd.clear();
-  lcd.setCursor(15,1);
-  lcd.write(byte(0));
-  messageLCD("A lavar...",0,0);
-  digitalWrite(greenLed, HIGH);
-
-
-  cycleTimeEnd = millis() + ( (long) cycleDuration)*1000;
-  // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
-  int washDuration = 0.25 * cycleDuration;
-  int rinseDuration = 0.25 * cycleDuration;
-  int spinDuration = 0.25 * cycleDuration;
-  int drainDuration = 0.25 * cycleDuration;
-  lavagem(washDuration, motorSpeed);
-  lavagem(rinseDuration, (motorSpeed-5));
-  
-  centrifugacao(spinDuration, motorSpeed);
-  descarga(drainDuration, motorSpeed);
-
-  digitalWrite(greenLed, LOW);
-  
-  
-    NewTone(buzzPin, 1000); // Send 1KHz sound signal...
-    delay(1000);    
-    noNewTone(buzzPin);     // Stop sound...   
-     /*// ...for 1 sec
-     tone(buzzPin, 700); // Send 1KHz sound signal...
-    delay(1000);        // ...for 1 sec
-     tone(buzzPin, 500); // Send 1KHz sound signal...
-    delay(1000);        // ...for 1 sec
-    noTone(buzzPin);     // Stop sound...
-    delay(1000); */
-
-  
 
 }
-    
-    
-              
-
 
             

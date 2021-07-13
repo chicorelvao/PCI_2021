@@ -1,7 +1,4 @@
-/*
- Stepper Motor Control - speed control
- This program drives a unipolar or bipolar stepper motor.
- /* Francisco Relvão, João Fernandes e Sílvia Santos -> Grupo C (TP2)
+/* Francisco Relvão, João Fernandes e Sílvia Santos -> Grupo C (TP2)
  * Exercício: Controlo da velocidade e sentido de rotação de um
  * motor de passo com um potenciómetro
  * 
