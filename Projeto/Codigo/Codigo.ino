@@ -11,7 +11,21 @@
 #include <IRremote.h>
 #include <NewTone.h>
 
-
+/** Reconhecimentos:
+ * A implementação da biblioteca com para o LCD 
+ * com o registador de deslocamento foi escrita
+ * por Mathias Munk Hansen.
+ * https://github.com/matmunk/LiquidCrystal_74HC595
+ * 
+ * A biblioteca newTone foi desenvolvida por
+ * teckel: 
+ * https://forum.arduino.cc/u/teckel/summary
+ * 
+ **As restantes bibliotecas são licenciadas pela
+ * Creative Commons Attribution-ShareAlike 3.0 License
+ * e são de domínio publico.
+ *
+*/
 
 
 
