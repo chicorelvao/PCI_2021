@@ -168,6 +168,7 @@ int motorSpeed = 0;
 
 
 
+
 /*-----------------------------------
  * --------Definições do LCD---------
  * ----------------------------------
@@ -290,16 +291,30 @@ void loop() {
   delay(100);
   lcd.clear();
 
-  goBack = true;
-  while(goBack)
+
+  while(true)
   {
-    messageLCD("  Programas   Programas  ", 0, 0);
-    messageLCD(" 1-Rapidos    2-Delicados", 0, 1);
+    lcd.clear();
+    delay(500);
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  1-Rapidos  ", 0, 1);
     // REMOV - Delay no início da apresentação - 
-    delay(100);
-  
-    //Deslocação do texto no ecrã, para o utilizador conseguir ver
-    moveDisplay(9, 100);
+    delay(500);
+    lcd.clear();
+    
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  2-Delicados ", 0, 1);
+    delay(500);
+    lcd.clear();
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  3-Algodoes  ", 0, 1);
+    delay(500);
+    lcd.clear();
+    messageLCD("  Programas ", 0, 0);
+    messageLCD("  4-Sintéticos ", 0, 1);
+    delay(500);
+    lcd.clear();
+    /*
     // delay na transição entre a apresentação dos programas
     delay(100);
     
@@ -309,210 +324,240 @@ void loop() {
     delay(100);
   
     moveDisplay(9, 100);
-  
+    */
     messageLCD("Selecione o programa desejado:", 0, 0);
-      
-    num = IRrequest();
-  
-    switch (num){ 
-      // Opção- Rápidos  
+    delay(500);
+    num = IRrequest(200);
 
-      case 1:  
-        invalidOption = true;
-        while(invalidOption)
-        {
-          lcd.clear();
-          messageLCD("      Rapidos         Rapidos      ", 0, 0);
-          messageLCD(" 1-Rapido (Pre.def) 2-Rapido (20 C)", 0, 1);
-          // REMOV - Delay no início da apresentação - 
-          delay(10);
-        
-          //Deslocação do texto no ecrã, para o utilizador conseguir ver
-          moveDisplay(19, 10);
-          // delay na transição entre a apresentação dos programas
-          delay(10);
-          
-          messageLCD("      Rapidos         Rapidos      ", 0, 0);
-          messageLCD(" 3-Rapido (40 C)    4-Rapido (60 C)", 0, 1);
-          // delay no início da apresentação
-          delay(10);
-        
-          moveDisplay(19, 10);
+    if( (num > 0) && (num < 5)){
+      break;
 
-          num = IRrequest();
 
-          if(goBack)
-          {
-            invalidOption = false;
-          }
-          else
-          {
-            switch (num){
-              // Rápido (30 min) - tecla 1
-              case 1:
-              
-                /*
-                rpm (máquina)          rpm (stepper)
-                1200           ----->  18
-                800            ----->  12
-                */
-                motorSpeed = 12;
-                cycleDuration = 10;
-                temperature = 30;
-                cicloDeLavagem(motorSpeed, cycleDuration, temperature);
-                invalidOption = false;      
-                break;
-        
-              // Rápido (T = 20ºC) - tecla 2
-              case 2: 
-      
-                progMaquina(12, 20, 15, 35);
-                invalidOption = false;
-                break;
-      
-              // Rápido (T = 40ºC) - tecla 3
-              case 3: 
-      
-                progMaquina(18, 40, 15, 35);
-                invalidOption = false;
-                break;
-      
-              // Rápido (T = 60ºC) - tecla 4
-              case 4: 
-              
-                /*
-                rpm (máquina)          rpm (stepper)
-                1200           ----->  18
-                1000           ----->  15
-                */
-                progMaquina(15, 60, 15, 35);
-                invalidOption = false;
-                break;
-    
-              default:
-           
-                lcd.clear();
-                messageLCD("Opcao invalida.", 0, 0);
-                delay(1000);
-            }
-
-          }
-        }
-        
-        break;
-        
-      // Opção- Delicados 
-      
-      case 2: 
-        /*
-        rpm (máquina)          rpm (stepper)
-        1200           ----->  18
-        600            ----->  9
-        */
-        progMaquina(9, 30, 45, 75);// 45 min = 3/4 h e 75 min = 1 1/4 h
-        
-        break;
-        
-      // Opção- Algodões
-      
-      case 3: 
-        invalidOption = true;
-        while(invalidOption)
-        {
-          lcd.clear();
-          messageLCD(" Algodoes     Algodoes      Algodoes",0,0);
-          messageLCD(" 1-Algodao diario 2-Algodao (225min)",0,1);
-          moveDisplay(20, 500);
-          num = IRrequest();
-          
-          if(goBack)
-          {
-            invalidOption = false;
-          }
-          else
-          {
-            switch (num){
-              // Algodão diário - tecla 1
-              case 1:
-      
-                progMaquina(18, 30, 165, 225);// 165 min = 2 3/4 h e 225 min = 3 3/4 h
-                invalidOption = false;
-                break;
-      
-              // Algodão (225 min) - tecla 2
-              case 2:
-      
-                motorSpeed = 18;
-                cycleDuration = 450; // 225 min na datasheet correspondem a 450s no stepper
-                temperature = 40;
-                cicloDeLavagem(motorSpeed, cycleDuration, temperature);
-                invalidOption = false;
-                break;
-    
-              default:
-              
-                lcd.clear();
-                messageLCD("Opcao invalida.", 0, 0);
-                delay(1000);
-            }
-          }
-        }
-          
-        break;
-          
-      // Opção- Sintéticos
-      
-      case 4:
-        invalidOption = true;
-        while(invalidOption)
-        {
-          lcd.clear();
-          messageLCD(" Sinteticos     Sinteticos     Sinteticos",0,0);
-          messageLCD(" 1-Sintetico diario 2-Sintetico (200 min)",0,1);
-          moveDisplay(25, 500);
-          num = IRrequest();
-          
-          if(goBack)
-          {
-            invalidOption = false;
-          }
-          else
-          {
-            switch (num){
-              // Sintético diário - tecla 1
-              case 1:
-      
-                progMaquina(18, 30, 105, 198);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
-                invalidOption = false;
-                break;
-      
-              // Sintético (200 min) - tecla 2
-              case 2:
-      
-                motorSpeed = 18;
-                cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
-                temperature = 40;
-                cicloDeLavagem(motorSpeed, cycleDuration, temperature);
-                invalidOption = false;
-                break;
-    
-              default:
-              
-                lcd.clear();
-                messageLCD("Opcao invalida.", 0, 0);
-                delay(1000);
-            }
-          }
-        }
-        break;
-      
-      default:
-        lcd.clear();
-        messageLCD("Opcao invalida.", 0, 0);
-        delay(1000);
-        
+    } else if(num > 5) {
+      lcd.clear();
+      messageLCD("Opcao invalida.", 0, 0);
+      delay(1000);
     }
+
   }
+  
+  switch (num){ 
+    // Opção- Rápidos  
+
+    case 1:  
+      goBack = false;
+      num = 0;
+
+      while(!goBack)
+      {
+        lcd.clear();
+        messageLCD("      Rapidos         Rapidos      ", 0, 0);
+        messageLCD(" 1-Rapido (Pre.def) 2-Rapido (20 C)", 0, 1);
+        // REMOV - Delay no início da apresentação - 
+        delay(200);
+      
+        //Deslocação do texto no ecrã, para o utilizador conseguir ver
+        moveDisplay(19, 100);
+        // delay na transição entre a apresentação dos programas
+        delay(200);
+        
+        messageLCD("      Rapidos         Rapidos      ", 0, 0);
+        messageLCD(" 3-Rapido (40 C)    4-Rapido (60 C)", 0, 1);
+        // delay no início da apresentação
+        delay(200);
+      
+        moveDisplay(19, 100);
+        
+        messageLCD("Selecione o programa desejado:", 0, 0);
+        delay(500);
+        num = IRrequest(200);
+
+
+        if( (num > 0) && (num < 5)){
+          goBack = true;
+          lcd.clear();
+          messageLCD("Programa: " + String(num), 0, 0);
+          delay(1000);
+        } else if( num > 5) {
+
+          lcd.clear();
+          messageLCD("Opcao invalida.", 0, 0);
+          delay(1000);
+
+        } 
+
+        
+
+      }
+      
+      switch (num){
+        // Rápido (30 min) - tecla 1
+        case 1:
+        
+          /*
+          rpm (máquina)          rpm (stepper)
+          1200           ----->  18
+          800            ----->  12
+          */
+          motorSpeed = 12;
+          cycleDuration = 10;
+          temperature = 30;
+          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          invalidOption = false;      
+          break;
+  
+        // Rápido (T = 20ºC) - tecla 2
+        case 2: 
+
+          progMaquina(12, 20, 15, 35);
+          invalidOption = false;
+          break;
+
+        // Rápido (T = 40ºC) - tecla 3
+        case 3: 
+
+          progMaquina(18, 40, 15, 35);
+          invalidOption = false;
+          break;
+
+        // Rápido (T = 60ºC) - tecla 4
+        case 4: 
+        
+          /*
+          rpm (máquina)          rpm (stepper)
+          1200           ----->  18
+          1000           ----->  15
+          */
+          progMaquina(15, 60, 15, 35);
+          invalidOption = false;
+          break;
+      }
+    
+    break;
+      
+    // Opção- Delicados 
+    
+    case 2: 
+      /*
+      rpm (máquina)          rpm (stepper)
+      1200           ----->  18
+      600            ----->  9
+      */
+      progMaquina(9, 30, 45, 75);// 45 min = 3/4 h e 75 min = 1 1/4 h
+      
+      break;
+      
+    // Opção- Algodões
+    
+    case 3:         
+      goBack = false;
+      num = 0;
+      while(!goBack){
+        
+        lcd.clear();
+        messageLCD(" Algodoes     Algodoes      Algodoes",0,0);
+        messageLCD(" 1-Algodao diario 2-Algodao (225min)",0,1);
+        moveDisplay(20, 500);
+        
+        messageLCD("Selecione o programa desejado:", 0, 0);
+        delay(500);
+        num = IRrequest(200);
+
+
+        if( (num > 0) && (num < 3)){
+          goBack = true;
+          lcd.clear();
+          messageLCD("Programa: " + String(num), 0, 0);
+          delay(1000);
+        } else if( num > 3) {
+
+          lcd.clear();
+          messageLCD("Opcao invalida.", 0, 0);
+          delay(1000);
+
+        } 
+      }
+
+      switch (num){
+        // Algodão diário - tecla 1
+        case 1:
+
+          progMaquina(18, 30, 165, 225);// 165 min = 2 3/4 h e 225 min = 3 3/4 h
+          invalidOption = false;
+          break;
+
+        // Algodão (225 min) - tecla 2
+        case 2:
+
+          motorSpeed = 18;
+          cycleDuration = 450; // 225 min na datasheet correspondem a 450s no stepper
+          temperature = 40;
+          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          invalidOption = false;
+          break;
+      }
+        
+      
+        
+      break;
+        
+    // Opção- Sintéticos
+    
+    case 4:
+      goBack = false;
+      num = 0;
+
+      while(!goBack){
+        
+        lcd.clear();
+        messageLCD(" Sinteticos     Sinteticos     Sinteticos",0,0);
+        messageLCD(" 1-Sintetico diario 2-Sintetico (200 min)",0,1);
+        moveDisplay(25, 200);
+
+        messageLCD("Selecione o programa desejado:", 0, 0);
+        delay(500);
+        num = IRrequest(200);
+
+        if( (num > 0) && (num < 3)){
+          goBack = true;
+          lcd.clear();
+          messageLCD("Programa: " + String(num), 0, 0);
+          delay(1000);
+        } else if( num > 3) {
+
+          lcd.clear();
+          messageLCD("Opcao invalida.", 0, 0);
+          delay(1000);
+
+        } 
+      }
+
+      
+      switch (num){
+        // Sintético diário - tecla 1
+        case 1:
+
+          progMaquina(18, 30, 105, 198);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
+        
+          break;
+
+        // Sintético (200 min) - tecla 2
+        case 2:
+
+          motorSpeed = 18;
+          cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
+          temperature = 40;
+          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          break;
+
+      }
+        
+      
+      break;
+      
+  
+  
+}
 }
 
 
@@ -589,6 +634,9 @@ void printTimeLeft(){
 
   printTime = String(hourLeft) + ":" + minuteStr;
   messageLCD(printTime, 9,1);
+  IRpause();
+  
+  //IRrequest(200);
 
  }
 
@@ -605,37 +653,47 @@ void printTimeLeft(){
 void progMaquina(int motorSpeed, int temperature, int infLim, int supLim)     
 {
   lcd.clear();
-  int cont1 = 0;
+  num = 0;
+  goBack = false;
+
+  int countTries = 0;
+
   num = infLim;
 
-  while(cont1 == 0 || (num < infLim || num > supLim))
+  while(countTries == 0 || (num < infLim || num > supLim))
   {
-    cont1++;
+    countTries++;
     
-    if (cont1 == 1)
+    if (countTries == 1)
     {
       messageLCD(" Insira a duracao desejada: ",0,0);
-      moveDisplay(12, 500);
+      moveDisplay(12, 200);
     }
 
-    else
+    else if(countTries > 1 && num != 0)
     {
       messageLCD(" Duracao introduzida invalida!",0,0);
-      moveDisplay(14, 500);
+      moveDisplay(14, 200);
       messageLCD(" Insira a duracao desejada: ",0,0);
-      moveDisplay(12, 500);
-    }
+      moveDisplay(12, 200);
+    } 
       
-    num = IRrequest();
+    //Se o utilizador quiser voltar atrás, o ciclo é quebrado
+    if(!goBack){
+      num = IRrequest(200);
+    } else{
+      break;
+    }
+
   }
 
   
-  
-  cicloDeLavagem(motorSpeed, num, temperature);            
+  if(!goBack){
+    cicloDeLavagem(motorSpeed, num, temperature); 
+  }           
 }
 
-void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
-{ 
+void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature){ 
   lcd.clear();
   lcd.setCursor(15,1);
   lcd.write(byte(0));
@@ -674,7 +732,17 @@ void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature)
 }
     
 // Indica se os produtos (detergente e amaciador) foram colocados
+/*
 void productIn (){
+
+  
+     * Os valores -1  e -3 devolvidos por IRrequest() foram arbitrariamente definidos para 
+     * servirem de flag à colocação de detergente e à opção de voltar atrás, respetivamente.
+     * Se num = -1 o detergente foi colocado e o programa segue, caso contrário o 
+     * detergente não foi colocado e o programa volta a solicitar a sua inserção.
+     * Se num = -3 a opção de voltar atrás foi escolhida e o programa volta à 
+     * apresentação dos programas, caso contrário o programa segue normalmente
+     
 
   product = false;
 
@@ -689,10 +757,26 @@ void productIn (){
       product = true;      
     }
 
+  if(number != -1 && number != -3){
+      messageLCD(String(number), 0, 1);
+      delay(1000);
+    }
+
+    if(number == -1){
+      product = true;
+    }
+
+    if(number == -3){
+      goBack = true;
+    }
+    else{
+      goBack = false;
+    }
   }
 
 
 }
+*/
 
 /*
  * Métodos responsáveis pela execução do ciclo de lavagem,
@@ -850,34 +934,73 @@ void descarga (int timeMax, int speedMov){
  * ----------------Interface com Infra-Vermelhos-----------------
  * --------------------------------------------------------------
  */
-int IRrequest (){
+int IRrequest (int delayCatch){
     //número que vai ser introduzido pelo o utilizador
     int number = 0; 
 
-    results.value = 0xFF6897; // garante que entra no while, se a última tecla que o utilizador premiu foi o play
-    //se formos utilizar as variáveis receiveIR e comandOption em baixo, temos de atualizá-las à medida que irrecv.decode(&results) e results.value mudam
+
+    /**O hexadecimal corresponde à tecla Play. Esta tecla serve
+     * para confirmar o número introduzido pelo o utilizador.
+     */
+    results.value = 0xFFC23D; 
+
+    /** O método .resume limpa a booleana do metodo .decode e prepara
+     * o cpu para ler outro código novo enviado pelo comando.
+     * A questão aqui é que se o .resume nao for chamada, o
+     * .decode é sempre verdadeiro, então esta função automa-
+     * ticamente presa no while loop, mesmo que o comando nao
+     * tenha sido premido.
+     
+    irrecv.resume();
+
+    //Um pequeno delay para permitir a receção de Infra-vermelhos 
+    delay(delayCatch);
 
 
-    while(results.value != 0xFFC23D){
-      if (irrecv.decode(&results)){   
-       
-       //Para evitar somar número negativos
-       
+    * O programa fica preso no while loop até a tecla play ser
+     * pressionada. 
+     * Dentro do while loop, o utilizador pode construir números
+     * de 0 até 999. O limite advem do facto de um inteiro nao
+     * puder ser maior que 32767. Assim, evitam-se erros de 
+     * tamanhos nos registadores.
+     * Além disso, nenhum ser humano usa números maior que 500 
+     * para tarefas domésticas.
+     * 
+    */
+
+    
+    boolean catchIR;
+    while(results.value != 0xFFC23D || irrecv.decode(&results)){
+      //Se o comando tiver sido pressionado, entra no if statement
+
+      if(irrecv.decode(&results)){
+        catchIR = true;
+      } else {
+        catchIR = false;
+      }
+
+
+      if (catchIR){   
+       //O comando funciona por hexadecimais que são traduzidos para números ou booleans
+
         switch(results.value){ 
           case 0xFF22DD:
-          //Tecla Rewind
-            number = -3;
+          //Tecla Rewind - Voltar atrás no menu
+            goBack = true;
+            //Quando se carrega rewind, o número que estava a ser construído é eliminado
+            number = 0;
             messageLCD("Voltar atras?", 0, 1);
 
             break;
 
           case 0xFF629D:  
           //Tecla CH
-            number = -1;
-            messageLCD("Detergente colocado? Confirme.", 0, 1);
+            messageLCD("Detergente colocado?", 0, 1);
             break;
             
+            //Por ordem: Teclas 0-9
           case 0xFF6897:
+            
             number = number *10 + 0;
             messageLCD(String(number), 0, 1);
             delay(1000);
@@ -934,56 +1057,77 @@ int IRrequest (){
             number = number *10 + 9;
             messageLCD(String(number), 0, 1);
             break;
-        
-          default:
-            Serial.print(" unknown button   ");
-            Serial.println(results.value, HEX);
         }
         
+        //O número introduzido pelo utilizador é maior que 900, então é eliminado
         if(number > 900){
+          //O utilizador pode construir outro número do zero
           number = 0;
           messageLCD("0     ", 0, 1);
         } 
+        
+        /** Se o utilizador carregar primeiro na tecla rewind, então
+         * a boolean goBack fica verdadeira. Se o utilizador carregar
+         * de seguida num número, então quer dizer que quer entrar 
+         * num programa. Vai existir conflito, portanto, após qualquer
+         * número ser construído, booleana goBack é negativa.
+         * 
+        */
+        if(number > 0){
+          goBack = false;
+        }
 
-
+        //Reset do objeto de IR para ler novos códigos.
         irrecv.resume();
+        
 
       }
+      
+    } 
+    irrecv.resume();
 
-    }
-
-    lcd.clear();
-
-    /*
-     * Os valores -1  e -3 devolvidos por IRrequest() foram arbitrariamente definidos para 
-     * servirem de flag à colocação de detergente e à opção de voltar atrás, respetivamente.
-     * Se num = -1 o detergente foi colocado e o programa segue, caso contrário o 
-     * detergente não foi colocado e o programa volta a solicitar a sua inserção.
-     * Se num = -3 a opção de voltar atrás foi escolhida e o programa volta à 
-     * apresentação dos programas, caso contrário o programa segue normalmente
-     */
-     
-    if(number != -1 && number != -3){
-      messageLCD(String(number), 0, 1);
-      delay(1000);
-    }
-
-    if(number == -1){
-      product = true;
-    }
-
-    if(number == -3){
-      goBack = true;
-    }
-    else{
-      goBack = false;
-    }
-    
     return number;
+     
+    
+    
 }
 
-
               
+void IRpause(){
+   
+     //número que vai ser introduzido pelo o utilizador
+    int number = 0; 
 
+    results.value = 0xFFC23D; 
+
+    while(results.value != 0xFFC23D || irrecv.decode(&results)){
+      //Se o comando tiver sido pressionado, entra no if statement
+      
+      messageLCD("fds", 0, 1);
+      pinMode(greenLed, HIGH);
+      if (irrecv.decode(&results)){   
+       //O comando funciona por hexadecimais que são traduzidos para números ou booleans
+
+        
+        
+        //Reset do objeto de IR para ler novos códigos.
+        irrecv.resume();
+        
+
+      }
+      
+    } 
+    messageLCD("out", 0, 1);
+    pinMode(greenLed, HIGH);
+    
+    irrecv.resume();
+}
+    
+    
+
+
+     
+    
+    
 
             
