@@ -22,8 +22,7 @@
  */
 
 
-int tempAlog = A1;
-
+int sensorTemp = A0;
 
 
 
@@ -45,7 +44,7 @@ int buzzPin = 7;
 //Pins de conexão com os LEDs
 int greenLed = 1;
 int redLed = 0;
-int blueLed = 2;
+int blueLed = 12;
 
 /*
  * Pins de conexão com o LCD, que vai ser utilizado com o
@@ -96,6 +95,8 @@ int num;
 //Variavel que contem a temperatura maxima de um programa
 int temperature;
 
+int tempMaxLimit = 31;
+int tempMinLimit = 31;
 
 
 //-------------Variaveis long------------------
@@ -202,6 +203,14 @@ byte lock[8] = {0b00100 ,
 
 
 
+byte ice[8] =  {0b00100 ,
+                0b10101 ,
+                0b01110 ,
+                0b00100 ,
+                0b11111 ,
+                0b01110 ,
+                0b10101 ,
+                0b00100 };
 
 
 /*----------------------------------------
@@ -246,6 +255,7 @@ void setup() {
   * mais facéis de imprimir estes no LCD
   */
   lcd.createChar(0,lock);
+  lcd.createChar(1,ice);
 
   //Inicialização do sensor de infra-vermelhos
   irrecv.enableIRIn();
@@ -634,9 +644,19 @@ void printTimeLeft(){
 
   printTime = String(hourLeft) + ":" + minuteStr;
   messageLCD(printTime, 9,1);
+
+
+
+  int stopTimeInit = millis();
   IRpause();
+  checkTemp(tempMaxLimit, tempMinLimit);
+  int stopTimeEnd = millis();
+
+  runTime += stopTimeEnd-stopTimeInit;
+  cycleTimeEnd +=  stopTimeEnd-stopTimeInit;
+
   
-  //IRrequest(200);
+  
 
  }
 
@@ -812,6 +832,7 @@ void  lavagem (int timeMax, int speedMov){
   while(runTime > millis()){
     myStepper.step(deltaStep);
     printTimeLeft();
+    
     
   }
   
@@ -1094,37 +1115,63 @@ int IRrequest (int delayCatch){
 
               
 void IRpause(){
-   
+
      //número que vai ser introduzido pelo o utilizador
+
     results.value = 0xFFC23D; 
 
     while(results.value != 0xFFC23D || irrecv.decode(&results)){
       //Se o comando tiver sido pressionado, entra no if statement
       
       messageLCD("Paragem.", 0, 1);
+
       
       if (irrecv.decode(&results)){   
        //O comando funciona por hexadecimais que são traduzidos para números ou booleans
-
-        
-        
         //Reset do objeto de IR para ler novos códigos.
         irrecv.resume();
-        
 
       }
       
     } 
-    messageLCD("out", 0, 1);
-    
+    messageLCD("        ", 0, 1);
     irrecv.resume();
 }
     
     
-
+/*---------------------------------------------------------------
+ * --------------------Sensor de temperatura---------------------
+ * --------------------------------------------------------------
+ */
 
      
-    
-    
+void checkTemp(int maxTemp, int minTemp){
+  int tempNow = analogRead(sensorTemp) * 5/(0.01*1023);
+  //messageLCD(String(tempNow), 0, 1);
+
+  if(tempNow > maxTemp) {
+    pinMode(redLed, LOW);
+
+    while(true) {
+      messageLCD("Too hot.", 0, 1);
+      tempNow = analogRead(sensorTemp)* 5/(0.01*1023);
+      if(tempNow < maxTemp) {
+        break;
+      }
+
+    }
+  } else if(tempNow < minTemp) {
+    pinMode(redLed, HIGH);
+    lcd.setCursor(15,0);
+    lcd.write(byte(1));
+  } else {
+    pinMode(redLed, HIGH);
+    lcd.setCursor(15,0);
+    lcd.write(" ");
+    //messageLCD("        ", 0, 1);
+  }
+
+
+}
 
             
