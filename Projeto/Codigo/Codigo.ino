@@ -21,7 +21,7 @@
  * --------------------------------
  */
 
-
+//Conexão com o sensor de temperatura
 int sensorTemp = A0;
 
 
@@ -92,10 +92,12 @@ int cycleDuration;
 //Tecla do comando selecionada
 int num;
 
-//Variavel que contem a temperatura maxima de um programa
+//Variavel que contem a temperatura maxima e minima de um programa
 
 int tempMaxLimit = 31;
 int tempMinLimit = 15;
+//Temperatura medida pelo o sensor de temperatura
+int tempNow;
 
 
 //-------------Variaveis long------------------
@@ -200,7 +202,7 @@ byte lock[8] = {0b00100 ,
                 0b00000};
 
 
-//Simbolo do gelo, para quando a temperatura está abaixo da temperatura miníma
+//Simbolo do gelo para quando a temperatura está abaixo da temperatura miníma
 
 byte ice[8] =  {0b00100 ,
                 0b10101 ,
@@ -219,6 +221,7 @@ byte ice[8] =  {0b00100 ,
 
 //Objeto que permite a interação com o sensor de infra-vermelhos
 IRrecv irrecv(IRPin);
+//Objeto que contem o dados de uma informação recebida pelo o sensor de Infra-vermelhos
 decode_results results;
 
 //https://www.pjrc.com/teensy/td_libs_IRremote.html
@@ -250,8 +253,9 @@ void setup() {
 
   // Inicialização do LCD
   lcd.begin(16, 2);
+
   /*O simbolos são associados a um char com index para ser
-  * mais facéis de imprimir estes no LCD
+  * mais facilde imprimir estes no LCD
   */
   lcd.createChar(0,lock);
   lcd.createChar(1,ice);
@@ -296,18 +300,26 @@ void loop() {
   lcd.clear();
   
   // Apresentação do menu principal e respetivas opções
+
+  /**
+   * A função messegeLCD permite escrever uma String na posição indicada
+   * nos argumentos sendo o primeiro a ordenada e o segundo a abcissa.
+  */
   messageLCD("Menu",5,0); 
   delay(500);
   lcd.clear();
 
-
+  /**O while loop tranca o utilizador até este introduzir um
+   *  número que corresponda a um  dos programas.
+   */
   while(true)
   {
+    //Apresentação das lavagens
     lcd.clear();
     delay(500);
     messageLCD("  Programas ", 0, 0);
     messageLCD("  1-Rapidos  ", 0, 1);
-    // REMOV - Delay no início da apresentação - 
+    //O delay serve para dar tempo ao utilizador de ler
     delay(500);
     lcd.clear();
     
@@ -315,6 +327,7 @@ void loop() {
     messageLCD("  2-Delicados ", 0, 1);
     delay(500);
     lcd.clear();
+
     messageLCD("  Programas ", 0, 0);
     messageLCD("  3-Algodoes  ", 0, 1);
     delay(500);
@@ -323,51 +336,69 @@ void loop() {
     messageLCD("  4-Sintéticos ", 0, 1);
     delay(500);
     lcd.clear();
-    /*
-    // delay na transição entre a apresentação dos programas
-    delay(100);
     
-    messageLCD("  Programas   Programas  ", 0, 0);
-    messageLCD(" 3-Algodoes  4-Sinteticos", 0, 1); 
-    // delay no início da apresentação
-    delay(100);
-  
-    moveDisplay(9, 100);
-    */
-    messageLCD("Selecione o programa desejado:", 0, 0);
+    messageLCD("Selecione:", 0, 0);
     delay(500);
+    //É pedido ao utilizador um número pela função IRreques() que lê o comando
     num = IRrequest();
-
+    //O número introduzido é verificado e se está dentro do intervalo de opcões
     if( (num > 0) && (num < 5)){
+      //Caso esteja, o ciclo é quebrado
       break;
 
 
     } else if(num > 5) {
+      //Caso contrátio, o utilizador recebe uma mensagem de erro
       lcd.clear();
       messageLCD("Opcao invalida.", 0, 0);
       delay(1000);
+      //O programa volta a apresentar o menu e pede outro número
     }
 
   }
-  
+
+  /**Sendo introduzido um número correto, um programa ou um conjunto de
+   * programas é selecionado.
+   * Existem 4 opcões:
+   *  - Rápidos (Conjunto de programas)
+   *    - 1 Rápido: Pré-definido, Temperatura 30ºC
+   *    - 2 Rápido: Duração 15-35 min, Temperatura 20ºC
+   *    - 3 Rápido: Duração 15-35 min, Temperatura 40ºC
+   *    - 4 Rápido: Duração 15-35 min, Temperatura 60ºC 
+   * 
+   *  - Delicados:  Duração 45-75 min, Temperatura 30ºC 
+   *
+   *  - Algodões (Conjunto de programas)
+   *    - 1 Algodões: Duração 165 - 225 min, Temperatura 30ºC
+   *    - 2 Algodões: Duração 450 min, Temperatura 40ºC
+
+   *  - Sintéticos (Conjunto de programas)
+   *    - 1 Algodões: Duração 105 - 225 min, Temperatura 30ºC
+   *    - 2 Algodões: Duração 360 min, Temperatura 40ºC
+   * 
+  */
+
   switch (num){ 
     // Opção- Rápidos  
 
     case 1:  
       goBack = false;
       num = 0;
-
+      /**O utilizador fica preso no neste loop até introduzir um número correto.
+       * No entanto, a booleana goBack permite ao utilizador voltar atrás para 
+       * o menu e selecionar outro programa. A variavel goBack é alterada pela
+       * função IRrequest() carregando na tecla previous.
+       * */
       while(!goBack)
       {
         lcd.clear();
         messageLCD("      Rapidos         Rapidos      ", 0, 0);
         messageLCD(" 1-Rapido (Pre.def) 2-Rapido (20 C)", 0, 1);
-        // REMOV - Delay no início da apresentação - 
         delay(200);
       
-        //Deslocação do texto no ecrã, para o utilizador conseguir ver
+        //A função moveDisplay deslocação do texto no ecrã, para o utilizador conseguir ver
         moveDisplay(19, 300);
-        // delay na transição entre a apresentação dos programas
+        //Delay na transição entre a apresentação dos programas
         delay(200);
         
         messageLCD("      Rapidos         Rapidos      ", 0, 0);
@@ -379,15 +410,18 @@ void loop() {
         
         messageLCD("Selecione o programa desejado:", 0, 0);
         delay(500);
+        //Pedido de um número
         num = IRrequest();
 
-
+        //Verificação da introdução do input do utilizador
         if( (num > 0) && (num < 5)){
+          //O programa é selecionado e o loop é quebrado.
           goBack = true;
           lcd.clear();
           messageLCD("Programa: " + String(num), 0, 0);
           delay(1000);
         } else if( num > 5) {
+          //A introdução de um número errado prende o utilizador no loop
 
           lcd.clear();
           messageLCD("Opcao invalida.", 0, 0);
@@ -398,16 +432,31 @@ void loop() {
         
 
       }
-      
+      //Selecção de um programa dos rápidos
+
+      /**
+       * Nos programas pré-definidos é usado a função cicloDeLavagem que
+       * não pede inputs aos utilizadores. 
+       * Em alguns programas, o utilizador podes escolher o tempo de
+       * funcionamento. Neste caso, o número é verificado pela função
+       * progMaquina. De seguida, a função de cicloDeLavagem é chamada. 
+       * A temperatura e velocidade máxima (motorSpeed) não podem ser 
+       * definidas pelo utilizador.
+      */
+
+     /** Argumentos da função progMaquina:
+      *  progMaquina(velocida máxima do motor, temperatura máxima, tempo minino a ser introduzido, tempo maximo)
+    */
       switch (num){
         // Rápido (30 min) - tecla 1
         case 1:
-        
-          /*
+
+          /* Da documentação
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
           800            ----->  12
           */
+
           motorSpeed = 12;
           cycleDuration = 10;
           tempMaxLimit = 30;
@@ -417,7 +466,7 @@ void loop() {
   
         // Rápido (T = 20ºC) - tecla 2
         case 2: 
-
+          
           progMaquina(12, 20, 15, 35);
           invalidOption = false;
           break;
@@ -546,7 +595,7 @@ void loop() {
         // Sintético diário - tecla 1
         case 1:
 
-          progMaquina(18, 30, 105, 198);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
+          progMaquina(18, 30, 105, 225);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
         
           break;
 
@@ -615,14 +664,26 @@ void moveDisplay(int maxPixel, int waitTime){
 
 }
 
+/** O tempo que falta é apresentado ao utilizador durante o ciclo
+ * de lavagem. O tempo restante é calculado a partir da duração
+ * atribuida para cada fase de lavagem (Ver secção Controlo do
+ * ciclo de lavagem). O arduino tem uma função chamada millis()
+ * que conta o tempo desde que o arduino está ativo. O retorno é 
+ * um long. 
+ * O tempo restante é obtido somando o tempo de duração mais 
+ * o tempo medido no timer, antes da lavagem começar e subtraíndo
+ * o tempo atualmente medido durante a lavagem:
+ * tempo atual: millis()
+ * tempo restante = tempo medido no inicio da lavagem + duração da fase
+*/
 void printTimeLeft(){
 
   long timeLeft = cycleTimeEnd - millis();
   String printTime;
   String minuteStr;
-  
+  //O time LEft é um long e necessita de ser convertido para o formato mm:ss
   long hourLeft = timeLeft/60000;
-
+  //Não existe horas ou minutos negativos
   if(hourLeft < 0) {
     hourLeft = 0;
   }
@@ -633,6 +694,7 @@ void printTimeLeft(){
     minuteLeft = 0 ;
   }
 
+  //Se os minutos forem menores que 10, no formato mm:ss tem de aparecer um zero e depois o número
   if(minuteLeft < 10) {
     minuteStr = "0" + String(minuteLeft);
   } else {
@@ -642,13 +704,20 @@ void printTimeLeft(){
 
 
   printTime = String(hourLeft) + ":" + minuteStr;
+  //O tempo é imprimido
   messageLCD(printTime, 9,1);
 
 
-
+  /**O utilizador tem a opção de parar a máquina. Se a maquina parar,
+   * tambem tem de parar a contagem do tempo. Assim, a variavel stopTimeInit
+   * marca a primeira pausa e stopTimedEnd, marca quando a lavagem recomeça.
+   * O tempo de finalização de uma fase tem de ser atualizado (runTime).
+   * O tempo a ser mostrado ao utilizador também é atualizado.(CycleTimeEnd)
+   * 
+  */
   int stopTimeInit = millis();
-  IRpause();
-  checkTemp(tempMaxLimit, tempMinLimit);
+  //IRpause();
+  //checkTemp(tempMaxLimit, tempMinLimit);
   int stopTimeEnd = millis();
 
   runTime += stopTimeEnd-stopTimeInit;
@@ -667,7 +736,12 @@ void printTimeLeft(){
  * --------------------------------------------------------------
  */
 
-
+/**O utilizador pode escolher o tempo de lavagem de alguns programas.
+ * A função proMaquina verifica se o tempo introduzida está dentro de
+ * um determinado intervalo e chama a função cicloDeLavagem para iniciar
+ * o programa de lavagem;
+ * 
+*/
 
 void progMaquina(int motorSpeed, int tempMaxLimit, int infLim, int supLim)     
 {
@@ -675,20 +749,21 @@ void progMaquina(int motorSpeed, int tempMaxLimit, int infLim, int supLim)
   num = 0;
   goBack = false;
 
+  //Conta o número de vezes que o utilizador tentou introduzir número
   int countTries = 0;
-
+  //O while loop so quebra quando o número selecionado estiver dentro de um intervalo
   num = infLim;
 
   while(countTries == 0 || (num < infLim || num > supLim))
   {
     countTries++;
-    
+    //Na primeira tentativa:
     if (countTries == 1)
     {
       messageLCD(" Insira a duracao desejada: ",0,0);
       moveDisplay(12, 200);
     }
-
+    //Em tentativas posteriores, aperece erro:
     else if(countTries > 1 && num != 0)
     {
       messageLCD(" Duracao introduzida invalida!",0,0);
@@ -697,7 +772,7 @@ void progMaquina(int motorSpeed, int tempMaxLimit, int infLim, int supLim)
       moveDisplay(12, 200);
     } 
       
-    //Se o utilizador quiser voltar atrás, o ciclo é quebrado
+    //Se o utilizador quiser voltar atrás, o ciclo é quebrado e não avança para o ciclo de lavagem
     if(!goBack){
       num = IRrequest();
     } else{
@@ -706,13 +781,18 @@ void progMaquina(int motorSpeed, int tempMaxLimit, int infLim, int supLim)
 
   }
 
-  
+
   if(!goBack){
     cicloDeLavagem(motorSpeed, num, tempMaxLimit); 
   }           
 }
 
+/** A função cicloDeLagavem dividi um progam em quatro fases
+ * que têm de respeitar o tempo de duração introduzido pelo o utilizador
+ * 
+*/
 void cicloDeLavagem(int motorSpeed, int  cycleDuration, int tempMaxLimit){ 
+  //Informação ao utilizador que a lavagem vai começar
   lcd.clear();
   lcd.setCursor(15,1);
   lcd.write(byte(0));
@@ -721,34 +801,30 @@ void cicloDeLavagem(int motorSpeed, int  cycleDuration, int tempMaxLimit){
   //Impede que o programa trave logo após escolher uma opção no menu
   irrecv.resume();
 
-
+  //Cálculo da "hora interna" do arduino a que o programa vai terminar
   cycleTimeEnd = millis() + ( (long) cycleDuration)*1000;
-  // as frações do tempo de duração correspondentes a cada fase do ciclo precisam de ser ajustadas com valores que façam mais sentido
+  /** as frações do tempo de duração correspondentes a cada fase do ciclo 
+   * precisam de ser ajustadas com valores que façam mais sentido
+  */
   int washDuration = 0.25 * cycleDuration;
   int rinseDuration = 0.25 * cycleDuration;
   int spinDuration = 0.25 * cycleDuration;
   int drainDuration = 0.25 * cycleDuration;
+
+  //São chamadas as 4 fases de lavagem
   lavagem(washDuration, motorSpeed);
+  //Esta fase é a de exaguamento
   lavagem(rinseDuration, (motorSpeed-5));
-  
   centrifugacao(spinDuration, motorSpeed);
   descarga(drainDuration, motorSpeed);
 
+  //Led verde é ativado
   digitalWrite(greenLed, LOW);
   
-  
-    NewTone(buzzPin, 1000); // Send 1KHz sound signal...
-    delay(1000);    
-    noNewTone(buzzPin);     // Stop sound...   
-     /*// ...for 1 sec
-     tone(buzzPin, 700); // Send 1KHz sound signal...
-    delay(1000);        // ...for 1 sec
-     tone(buzzPin, 500); // Send 1KHz sound signal...
-    delay(1000);        // ...for 1 sec
-    noTone(buzzPin);     // Stop sound...
-    delay(1000); */
-
-  
+  //No fim do programa, o buzzer apita para informar o utilizador
+  NewTone(buzzPin, 1000); // Send 1KHz sound signal...
+  delay(2000);    
+  noNewTone(buzzPin);     // Stop sound...    
 
 }
     
@@ -817,21 +893,26 @@ void productIn (){
  */
  
 
-/*Função que calcula o tempo que falta para acabar uma lavagem e 
-* apresentar no ecrã
-*/
+//Fase de lavagem
 
+/**Entre cada delta passos, o motor imprime o tempo restante
+     * verifica se o comando foi pressionado e ainda, verifica-se 
+     * a temperatura ultrapassou os limites definidos.
+    */
 
-// Lavagem 
+// 1ª - Lavagem: O motor gira a velocida constante numa unica direção
+// 2ª - Enxaguamento: O mesmo que a lavagem, mas a uma velocidade menor
 void  lavagem (int timeMax, int speedMov){
-  
+  //A velocidade é definida
   myStepper.setSpeed(speedMov);
   deltaStep = 100;
-
+  //A fase só pode durar uma fração definida do tempo total de lavagem
   runTime = ((long) timeMax)*1000 + millis();
-
+  //Enquanto a lavagem nao ultrapassar a o tempo definido
   while(runTime > millis()){
+    //O motor anda um número minimo de passos
     myStepper.step(deltaStep);
+    //É imprimido o tempo que falta, o comando é verificado e a temperatura também
     printTimeLeft();
     
     
@@ -841,17 +922,88 @@ void  lavagem (int timeMax, int speedMov){
 }
 
 
+/**Na centrifugação, o motor aceleração numa direção, deseceleraça
+ * nessa direção e faz o inverso para a outra.
+ * 
+*/
+void centrifugacao (int timeMax, int speedMov){
+  //Cálculo da hora a que vai terminar esta fase
+  runTime = ((long) timeMax)*1000 + millis();
+
+  //Controlo do tempo
+  while(runTime > millis()) {
+    //O motor roda da seguinte forma:
+    /**
+     * Desacelera para a direita
+     * Acelera para a esquerda
+     * Desacelera para a esquerda
+     * Acelera para a a direita
+     * 
+     * Este processo é repetido 4 vezes.
+     * No fim, é verificado se ainda há tempo para fazer
+     * mais rotações.
+     * 
+     * A função rotationDirection trata deste processo
+    */
+
+
+    for(int rotationType = 0; rotationType < 4; rotationType++){
+
+      switch (rotationType){
+
+        case 0:
+          
+          rotationDirection(speedMov, false, true);
+          break;
+
+        case 1:
+        
+          rotationDirection(speedMov, true, false);
+          break;
+
+        case 2:
+          
+          rotationDirection(speedMov, false, false);
+          break;
+
+        case 3:
+       
+          rotationDirection(speedMov, true, true);
+          break;
+        
+        default:
+          break;
+      }
+      //A hora de termina acontecer durante as 4 repetições, o loop é quebrado
+      if(millis() > runTime) {
+        break;
+      }
+
+    }
+
+    
+
+  }
+
+}
+
+/** A seguinte função define a direção a acelaração e direção 
+ * de rotação do motor através dos argumentos.
+ * Se speedUp true, então acelera e vice-versa.
+ * Se toRight true, então roda para a direta.
+ * 
+*/
 void rotationDirection(int speedMov, boolean speedUp, boolean toRight){
-  
+  //Definição da direção
   if(toRight) {
     deltaStep = 100;
   } else {
     deltaStep = -100;
   }
 
-
+  //Definição de acelaração ou desacelaração
   if(speedUp){
-
+    //A velocidade vai crescendo a cada 4 vezes deltaSteps
     for (int i = 3; i <= speedMov; i = i + (speedMov/3))
     {
       
@@ -865,7 +1017,7 @@ void rotationDirection(int speedMov, boolean speedUp, boolean toRight){
     }
     
   } else {
-
+    //A velocidade vai diminuindo a cada 4 vezes deltaSteps
     for (int i = speedMov; i > 3; i = i - (speedMov/3))
       {
         myStepper.setSpeed(i);
@@ -881,54 +1033,7 @@ void rotationDirection(int speedMov, boolean speedUp, boolean toRight){
 
 }
 
-
-void centrifugacao (int timeMax, int speedMov){
-
-  runTime = ((long) timeMax)*1000 + millis();
-  
-
-  while(runTime > millis()) {
-
-    for(int rotationType = 0; rotationType < 4; rotationType++){
-
-      switch (rotationType){
-
-        case 0:
-          /* code */
-          rotationDirection(speedMov, false, true);
-          break;
-
-        case 1:
-        /* code */
-          rotationDirection(speedMov, true, false);
-          break;
-
-        case 2:
-          /* code */
-          rotationDirection(speedMov, false, false);
-          break;
-
-        case 3:
-        /* code */
-          rotationDirection(speedMov, true, true);
-          break;
-        
-        default:
-          break;
-      }
-
-      if(millis() > runTime) {
-        break;
-      }
-
-    }
-
-    
-
-  }
-
-}
-
+//Na descarga, o maquina vai desacelarando lentamente, até o programa terminar
 
 void descarga (int timeMax, int speedMov){
   messageLCD("A terminar...",0,0);
@@ -956,9 +1061,17 @@ void descarga (int timeMax, int speedMov){
  * ----------------Interface com Infra-Vermelhos-----------------
  * --------------------------------------------------------------
  */
+
+//Retorno o número introduzido pelo o utilizador
 int IRrequest (){
     //número que vai ser introduzido pelo o utilizador
     int number = 0; 
+    /**Os números são construídos ao somar multiplos de 10:
+     * Tecla 1 -> 1
+     * Tecla 2 -> 2*10 + 1 = 21
+     * Etc
+     * 
+    */
 
 
     /**O hexadecimal corresponde à tecla Play. Esta tecla serve
@@ -966,19 +1079,7 @@ int IRrequest (){
      */
     results.value = 0xFFC23D; 
 
-    /** O método .resume limpa a booleana do metodo .decode e prepara
-     * o cpu para ler outro código novo enviado pelo comando.
-     * A questão aqui é que se o .resume nao for chamada, o
-     * .decode é sempre verdadeiro, então esta função automa-
-     * ticamente presa no while loop, mesmo que o comando nao
-     * tenha sido premido.
-     
-    irrecv.resume();
-
-    //Um pequeno delay para permitir a receção de Infra-vermelhos 
-    delay(delayCatch);
-
-
+    /** 
     * O programa fica preso no while loop até a tecla play ser
      * pressionada. 
      * Dentro do while loop, o utilizador pode construir números
@@ -990,17 +1091,18 @@ int IRrequest (){
      * 
     */
 
-    
+    //Esta boleana impede que o sensor leia demasiadas vezes o valor de uma tecla pressionada
+    //Atua como uma espécie de buffer
     boolean catchIR;
     while(results.value != 0xFFC23D || irrecv.decode(&results)){
-      //Se o comando tiver sido pressionado, entra no if statement
 
+      //Se o comando tiver sido pressionado, entra no if statement
       if(irrecv.decode(&results)){
         catchIR = true;
       } else {
         catchIR = false;
       }
-
+  
 
       if (catchIR){   
        //O comando funciona por hexadecimais que são traduzidos para números ou booleans
@@ -1081,7 +1183,7 @@ int IRrequest (){
             break;
         }
         
-        //O número introduzido pelo utilizador é maior que 900, então é eliminado
+        //Se o número introduzido pelo utilizador é maior que 900, então é eliminado
         if(number > 900){
           //O utilizador pode construir outro número do zero
           number = 0;
@@ -1095,7 +1197,7 @@ int IRrequest (){
          * número ser construído, booleana goBack é negativa.
          * 
         */
-        if(number > 0){
+        if(number >= 0){
           goBack = false;
         }
 
@@ -1114,10 +1216,8 @@ int IRrequest (){
     
 }
 
-              
+//IRpause permite parar uma lavagem. Faz uma pausa.       
 void IRpause(){
-
-     //número que vai ser introduzido pelo o utilizador
 
     results.value = 0xFFC23D; 
 
@@ -1125,11 +1225,9 @@ void IRpause(){
       //Se o comando tiver sido pressionado, entra no if statement
       
       messageLCD("Paragem.", 0, 1);
-
-      
+      //Se o comando for novamente pressionado, a lavagem é retomada
       if (irrecv.decode(&results)){   
-       //O comando funciona por hexadecimais que são traduzidos para números ou booleans
-        //Reset do objeto de IR para ler novos códigos.
+       
         irrecv.resume();
 
       }
@@ -1145,31 +1243,36 @@ void IRpause(){
  * --------------------------------------------------------------
  */
 
-     
+//Verificação da temperatura no sensor
 void checkTemp(int maxTemp, int minTemp){
-  int tempNow = analogRead(sensorTemp) * 5/(0.01*1023);
-  //messageLCD(String(tempNow), 0, 1);
+//Medição da temperatura
+  tempNow = analogRead(sensorTemp) * 5/(0.01*1023);
 
+  //Se a temperatura estiver muito alta, o led vermelho é aceso e a lavagem para
   if(tempNow > maxTemp) {
     pinMode(redLed, LOW);
-
+    //a lavagem para devido a este loop
     while(true) {
       messageLCD("Too hot.", 0, 1);
       tempNow = analogRead(sensorTemp)* 5/(0.01*1023);
+      //Se a temperatura voltar ao normal, a lavagem continua
       if(tempNow < maxTemp) {
         break;
       }
 
     }
+    //Para uma temperatura muito baixo, é imprimido um floco de gelo
   } else if(tempNow < minTemp) {
     pinMode(redLed, HIGH);
     lcd.setCursor(15,0);
     lcd.write(byte(1));
+
   } else {
+    //Dentro do intervalo de temperatura, a lavagem funciona normalmente
     pinMode(redLed, HIGH);
     lcd.setCursor(15,0);
     lcd.write(" ");
-    //messageLCD("        ", 0, 1);
+
   }
 
 
