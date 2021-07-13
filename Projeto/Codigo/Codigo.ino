@@ -452,6 +452,8 @@ void loop() {
         case 1:
 
           /* Da documentação
+          productIn();
+          /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
           800            ----->  12
@@ -466,7 +468,8 @@ void loop() {
   
         // Rápido (T = 20ºC) - tecla 2
         case 2: 
-          
+
+          productIn();
           progMaquina(12, 20, 15, 35);
           invalidOption = false;
           break;
@@ -474,13 +477,15 @@ void loop() {
         // Rápido (T = 40ºC) - tecla 3
         case 3: 
 
+          productIn();
           progMaquina(18, 40, 15, 35);
           invalidOption = false;
           break;
 
         // Rápido (T = 60ºC) - tecla 4
         case 4: 
-        
+
+          productIn();
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
@@ -496,6 +501,8 @@ void loop() {
     // Opção- Delicados 
     
     case 2: 
+    
+      productIn();
       /*
       rpm (máquina)          rpm (stepper)
       1200           ----->  18
@@ -507,7 +514,8 @@ void loop() {
       
     // Opção- Algodões
     
-    case 3:         
+    case 3:    
+           
       goBack = false;
       num = 0;
       while(!goBack){
@@ -540,6 +548,7 @@ void loop() {
         // Algodão diário - tecla 1
         case 1:
 
+          productIn();
           progMaquina(18, 30, 165, 225);// 165 min = 2 3/4 h e 225 min = 3 3/4 h
           invalidOption = false;
           break;
@@ -547,6 +556,7 @@ void loop() {
         // Algodão (225 min) - tecla 2
         case 2:
 
+          productIn();
           motorSpeed = 18;
           cycleDuration = 450; // 225 min na datasheet correspondem a 450s no stepper
           tempMaxLimit = 40;
@@ -595,6 +605,7 @@ void loop() {
         // Sintético diário - tecla 1
         case 1:
 
+          productIn();
           progMaquina(18, 30, 105, 225);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
         
           break;
@@ -602,6 +613,7 @@ void loop() {
         // Sintético (200 min) - tecla 2
         case 2:
 
+          productIn();
           motorSpeed = 18;
           cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
           tempMaxLimit = 40;
@@ -828,52 +840,25 @@ void cicloDeLavagem(int motorSpeed, int  cycleDuration, int tempMaxLimit){
 
 }
     
-// Indica se os produtos (detergente e amaciador) foram colocados
-/*
-void productIn (){
+// Indica se o detergente foi colocado
 
-  
-     * Os valores -1  e -3 devolvidos por IRrequest() foram arbitrariamente definidos para 
-     * servirem de flag à colocação de detergente e à opção de voltar atrás, respetivamente.
-     * Se num = -1 o detergente foi colocado e o programa segue, caso contrário o 
-     * detergente não foi colocado e o programa volta a solicitar a sua inserção.
-     * Se num = -3 a opção de voltar atrás foi escolhida e o programa volta à 
-     * apresentação dos programas, caso contrário o programa segue normalmente
-     
+void productIn (){
 
   product = false;
 
-  while(product){
-
+  while(!product){
+    lcd.clear();
     messageLCD(" Coloque o detergente e prima CH", 0, 0);
     moveDisplay(16, 500);
-    num = IRrequest();
-  
-  // Associa-se esta função à tecla CH do telecomando
-    if(num = 0xFF629D){
-      product = true;      
-    }
-
-  if(number != -1 && number != -3){
-      messageLCD(String(number), 0, 1);
-      delay(1000);
-    }
-
-    if(number == -1){
-      product = true;
-    }
-
-    if(number == -3){
-      goBack = true;
-    }
-    else{
-      goBack = false;
-    }
+    IRrequest();
   }
 
-
+  lcd.clear();
+  messageLCD(" Detergente colocado. Aguarde.", 0, 0);
+  moveDisplay(14, 500);
+  delay(1000);
 }
-*/
+
 
 /*
  * Métodos responsáveis pela execução do ciclo de lavagem,
@@ -1118,8 +1103,9 @@ int IRrequest (){
             break;
 
           case 0xFF629D:  
-          //Tecla CH
-            messageLCD("Detergente colocado?", 0, 1);
+          //Tecla Channel - Detergente colocado
+            //messageLCD("Detergente colocado?", 0, 1);
+            product = true;
             break;
             
             //Por ordem: Teclas 0-9
@@ -1199,6 +1185,7 @@ int IRrequest (){
         */
         if(number >= 0){
           goBack = false;
+          product = false;
         }
 
         //Reset do objeto de IR para ler novos códigos.

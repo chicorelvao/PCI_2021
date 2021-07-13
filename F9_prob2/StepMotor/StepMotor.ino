@@ -23,6 +23,7 @@ Stepper myStepper(stepsPerRevolution, 8, 10, 9, 11);
 
 // Número de bits associado à seleção de uma posição do eixo do potenciómetro
 int sensorReading = 0;
+int potenciometer = A0;
 
 // Velocidades minima e máxima obtidas empiricamente
 // O motor nao roda para outras velocidades, em 2048 passos por rotação completa
@@ -41,7 +42,7 @@ void setup() {
 
 void loop() {
   //lê o valor no sensor e imprime-o
-  sensorReading = analogRead(A0);
+  sensorReading = analogRead(potenciometer);
   Serial.print("Potenciomentro: ");
   Serial.println(sensorReading);
   
