@@ -482,7 +482,7 @@ void loop() {
               // Sintético diário - tecla 1
               case 1:
       
-                progMaquina(18, 30, 105, 198);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
+                progMaquina(18, 30, 105, 200);// 105 min = 1 3/4 h e 200 min = 3 1/3 h
                 invalidOption = false;
                 break;
       
@@ -490,7 +490,7 @@ void loop() {
               case 2:
       
                 motorSpeed = 18;
-                cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
+                cycleDuration = 400; // 200 min na datasheet correspondem a 400s no stepper
                 temperature = 40;
                 cicloDeLavagem(motorSpeed, cycleDuration, temperature);
                 invalidOption = false;
