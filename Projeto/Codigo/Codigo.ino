@@ -93,10 +93,9 @@ int cycleDuration;
 int num;
 
 //Variavel que contem a temperatura maxima de um programa
-int temperature;
 
 int tempMaxLimit = 31;
-int tempMinLimit = 31;
+int tempMinLimit = 15;
 
 
 //-------------Variaveis long------------------
@@ -201,7 +200,7 @@ byte lock[8] = {0b00100 ,
                 0b00000};
 
 
-
+//Simbolo do gelo, para quando a temperatura está abaixo da temperatura miníma
 
 byte ice[8] =  {0b00100 ,
                 0b10101 ,
@@ -269,7 +268,7 @@ void setup() {
 
    // Mensagem de inicio da máquina
   messageLCD("Bem Vindo!",3,0);
-  delay(100);
+  delay(1000);
   lcd.clear();
   // https://eletronicaparatodos.com/entendendo-e-controlando-motores-de-passo-com-driver-uln2003-e-arduino-roduino-board/
 
@@ -298,7 +297,7 @@ void loop() {
   
   // Apresentação do menu principal e respetivas opções
   messageLCD("Menu",5,0); 
-  delay(100);
+  delay(500);
   lcd.clear();
 
 
@@ -337,7 +336,7 @@ void loop() {
     */
     messageLCD("Selecione o programa desejado:", 0, 0);
     delay(500);
-    num = IRrequest(200);
+    num = IRrequest();
 
     if( (num > 0) && (num < 5)){
       break;
@@ -367,7 +366,7 @@ void loop() {
         delay(200);
       
         //Deslocação do texto no ecrã, para o utilizador conseguir ver
-        moveDisplay(19, 100);
+        moveDisplay(19, 300);
         // delay na transição entre a apresentação dos programas
         delay(200);
         
@@ -376,11 +375,11 @@ void loop() {
         // delay no início da apresentação
         delay(200);
       
-        moveDisplay(19, 100);
+        moveDisplay(19, 300);
         
         messageLCD("Selecione o programa desejado:", 0, 0);
         delay(500);
-        num = IRrequest(200);
+        num = IRrequest();
 
 
         if( (num > 0) && (num < 5)){
@@ -411,8 +410,8 @@ void loop() {
           */
           motorSpeed = 12;
           cycleDuration = 10;
-          temperature = 30;
-          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          tempMaxLimit = 30;
+          cicloDeLavagem(motorSpeed, cycleDuration, tempMaxLimit);
           invalidOption = false;      
           break;
   
@@ -467,11 +466,11 @@ void loop() {
         lcd.clear();
         messageLCD(" Algodoes     Algodoes      Algodoes",0,0);
         messageLCD(" 1-Algodao diario 2-Algodao (225min)",0,1);
-        moveDisplay(20, 500);
+        moveDisplay(20, 300);
         
         messageLCD("Selecione o programa desejado:", 0, 0);
         delay(500);
-        num = IRrequest(200);
+        num = IRrequest();
 
 
         if( (num > 0) && (num < 3)){
@@ -501,8 +500,8 @@ void loop() {
 
           motorSpeed = 18;
           cycleDuration = 450; // 225 min na datasheet correspondem a 450s no stepper
-          temperature = 40;
-          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          tempMaxLimit = 40;
+          cicloDeLavagem(motorSpeed, cycleDuration, tempMaxLimit);
           invalidOption = false;
           break;
       }
@@ -522,11 +521,11 @@ void loop() {
         lcd.clear();
         messageLCD(" Sinteticos     Sinteticos     Sinteticos",0,0);
         messageLCD(" 1-Sintetico diario 2-Sintetico (200 min)",0,1);
-        moveDisplay(25, 200);
+        moveDisplay(25, 300);
 
         messageLCD("Selecione o programa desejado:", 0, 0);
         delay(500);
-        num = IRrequest(200);
+        num = IRrequest();
 
         if( (num > 0) && (num < 3)){
           goBack = true;
@@ -556,8 +555,8 @@ void loop() {
 
           motorSpeed = 18;
           cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
-          temperature = 40;
-          cicloDeLavagem(motorSpeed, cycleDuration, temperature);
+          tempMaxLimit = 40;
+          cicloDeLavagem(motorSpeed, cycleDuration, tempMaxLimit);
           break;
 
       }
@@ -670,7 +669,7 @@ void printTimeLeft(){
 
 
 
-void progMaquina(int motorSpeed, int temperature, int infLim, int supLim)     
+void progMaquina(int motorSpeed, int tempMaxLimit, int infLim, int supLim)     
 {
   lcd.clear();
   num = 0;
@@ -700,7 +699,7 @@ void progMaquina(int motorSpeed, int temperature, int infLim, int supLim)
       
     //Se o utilizador quiser voltar atrás, o ciclo é quebrado
     if(!goBack){
-      num = IRrequest(200);
+      num = IRrequest();
     } else{
       break;
     }
@@ -709,16 +708,18 @@ void progMaquina(int motorSpeed, int temperature, int infLim, int supLim)
 
   
   if(!goBack){
-    cicloDeLavagem(motorSpeed, num, temperature); 
+    cicloDeLavagem(motorSpeed, num, tempMaxLimit); 
   }           
 }
 
-void cicloDeLavagem(int motorSpeed, int  cycleDuration, int temperature){ 
+void cicloDeLavagem(int motorSpeed, int  cycleDuration, int tempMaxLimit){ 
   lcd.clear();
   lcd.setCursor(15,1);
   lcd.write(byte(0));
   messageLCD("A lavar...",0,0);
   digitalWrite(greenLed, HIGH);
+  //Impede que o programa trave logo após escolher uma opção no menu
+  irrecv.resume();
 
 
   cycleTimeEnd = millis() + ( (long) cycleDuration)*1000;
@@ -955,7 +956,7 @@ void descarga (int timeMax, int speedMov){
  * ----------------Interface com Infra-Vermelhos-----------------
  * --------------------------------------------------------------
  */
-int IRrequest (int delayCatch){
+int IRrequest (){
     //número que vai ser introduzido pelo o utilizador
     int number = 0; 
 
