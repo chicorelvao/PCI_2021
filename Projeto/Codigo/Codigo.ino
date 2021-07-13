@@ -44,7 +44,7 @@ int buzzPin = 7;
 //Pins de conexão com os LEDs
 int greenLed = 1;
 int redLed = 0;
-int blueLed = 12;
+int blueLed = 2;
 
 /*
  * Pins de conexão com o LCD, que vai ser utilizado com o
@@ -92,10 +92,10 @@ int cycleDuration;
 //Tecla do comando selecionada
 int num;
 
-//Variavel que contem a temperatura maxima e minima de um programa
+//Variavel que contem a temperatura maxima e minima de um programa em graus
 
-int tempMaxLimit = 31;
-int tempMinLimit = 15;
+int tempMaxLimit = 35;
+int tempMinLimit = 2;
 //Temperatura medida pelo o sensor de temperatura
 int tempNow;
 
@@ -250,6 +250,7 @@ void setup() {
 
  //Definição do pin digital do buzzer passivo
   pinMode(buzzPin, OUTPUT);
+
 
   // Inicialização do LCD
   lcd.begin(16, 2);
@@ -452,7 +453,6 @@ void loop() {
         case 1:
 
           /* Da documentação
-          productIn();
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
@@ -468,8 +468,7 @@ void loop() {
   
         // Rápido (T = 20ºC) - tecla 2
         case 2: 
-
-          productIn();
+         
           progMaquina(12, 20, 15, 35);
           invalidOption = false;
           break;
@@ -477,7 +476,6 @@ void loop() {
         // Rápido (T = 40ºC) - tecla 3
         case 3: 
 
-          productIn();
           progMaquina(18, 40, 15, 35);
           invalidOption = false;
           break;
@@ -485,7 +483,6 @@ void loop() {
         // Rápido (T = 60ºC) - tecla 4
         case 4: 
 
-          productIn();
           /*
           rpm (máquina)          rpm (stepper)
           1200           ----->  18
@@ -502,7 +499,6 @@ void loop() {
     
     case 2: 
     
-      productIn();
       /*
       rpm (máquina)          rpm (stepper)
       1200           ----->  18
@@ -548,7 +544,6 @@ void loop() {
         // Algodão diário - tecla 1
         case 1:
 
-          productIn();
           progMaquina(18, 30, 165, 225);// 165 min = 2 3/4 h e 225 min = 3 3/4 h
           invalidOption = false;
           break;
@@ -556,7 +551,6 @@ void loop() {
         // Algodão (225 min) - tecla 2
         case 2:
 
-          productIn();
           motorSpeed = 18;
           cycleDuration = 450; // 225 min na datasheet correspondem a 450s no stepper
           tempMaxLimit = 40;
@@ -605,7 +599,6 @@ void loop() {
         // Sintético diário - tecla 1
         case 1:
 
-          productIn();
           progMaquina(18, 30, 105, 225);// 105 min = 1 3/4 h e 225 min = 2 1/2 h
         
           break;
@@ -613,7 +606,6 @@ void loop() {
         // Sintético (200 min) - tecla 2
         case 2:
 
-          productIn();
           motorSpeed = 18;
           cycleDuration = 360; // 200 min na datasheet correspondem a 360s no stepper
           tempMaxLimit = 40;
@@ -729,7 +721,7 @@ void printTimeLeft(){
   */
   int stopTimeInit = millis();
   //IRpause();
-  //checkTemp(tempMaxLimit, tempMinLimit);
+  checkTemp(tempMaxLimit, tempMinLimit);
   int stopTimeEnd = millis();
 
   runTime += stopTimeEnd-stopTimeInit;
@@ -804,7 +796,10 @@ void progMaquina(int motorSpeed, int tempMaxLimit, int infLim, int supLim)
  * 
 */
 void cicloDeLavagem(int motorSpeed, int  cycleDuration, int tempMaxLimit){ 
-  //Informação ao utilizador que a lavagem vai começar
+  //É pedido ao utilizador para introduzir o detergente
+  productIn();
+
+  //Informação ao utilizador que a lavagem vai começa
   lcd.clear();
   lcd.setCursor(15,1);
   lcd.write(byte(0));
@@ -849,14 +844,16 @@ void productIn (){
   while(!product){
     lcd.clear();
     messageLCD(" Coloque o detergente e prima CH", 0, 0);
-    moveDisplay(16, 500);
+    moveDisplay(16, 300);
     IRrequest();
   }
 
   lcd.clear();
+  digitalWrite(blueLed, HIGH);
   messageLCD(" Detergente colocado. Aguarde.", 0, 0);
-  moveDisplay(14, 500);
+  moveDisplay(14, 300);
   delay(1000);
+  digitalWrite(blueLed, LOW);
 }
 
 
@@ -1106,6 +1103,9 @@ int IRrequest (){
           //Tecla Channel - Detergente colocado
             //messageLCD("Detergente colocado?", 0, 1);
             product = true;
+            number = 0;
+             messageLCD("Colocado.", 0, 1);
+
             break;
             
             //Por ordem: Teclas 0-9
@@ -1183,7 +1183,7 @@ int IRrequest (){
          * número ser construído, booleana goBack é negativa.
          * 
         */
-        if(number >= 0){
+        if(number > 0){
           goBack = false;
           product = false;
         }
@@ -1237,7 +1237,7 @@ void checkTemp(int maxTemp, int minTemp){
 
   //Se a temperatura estiver muito alta, o led vermelho é aceso e a lavagem para
   if(tempNow > maxTemp) {
-    pinMode(redLed, LOW);
+    digitalWrite(redLed, HIGH);
     //a lavagem para devido a este loop
     while(true) {
       messageLCD("Too hot.", 0, 1);
@@ -1250,13 +1250,13 @@ void checkTemp(int maxTemp, int minTemp){
     }
     //Para uma temperatura muito baixo, é imprimido um floco de gelo
   } else if(tempNow < minTemp) {
-    pinMode(redLed, HIGH);
+    digitalWrite(redLed, LOW);
     lcd.setCursor(15,0);
     lcd.write(byte(1));
 
   } else {
     //Dentro do intervalo de temperatura, a lavagem funciona normalmente
-    pinMode(redLed, HIGH);
+    digitalWrite(redLed, LOW);
     lcd.setCursor(15,0);
     lcd.write(" ");
 
