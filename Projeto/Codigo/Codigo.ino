@@ -1096,15 +1096,13 @@ int IRrequest (int delayCatch){
 void IRpause(){
    
      //número que vai ser introduzido pelo o utilizador
-    int number = 0; 
-
     results.value = 0xFFC23D; 
 
     while(results.value != 0xFFC23D || irrecv.decode(&results)){
       //Se o comando tiver sido pressionado, entra no if statement
       
-      messageLCD("fds", 0, 1);
-      pinMode(greenLed, HIGH);
+      messageLCD("Paragem.", 0, 1);
+      
       if (irrecv.decode(&results)){   
        //O comando funciona por hexadecimais que são traduzidos para números ou booleans
 
@@ -1118,7 +1116,6 @@ void IRpause(){
       
     } 
     messageLCD("out", 0, 1);
-    pinMode(greenLed, HIGH);
     
     irrecv.resume();
 }
