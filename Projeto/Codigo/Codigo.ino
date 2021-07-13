@@ -191,8 +191,6 @@ int motorSpeed = 0;
  */
 
 
-//https://github.com/matmunk/LiquidCrystal_74HC595
-//https://playground.arduino.cc/Main/LiquidCrystal/
 
 //Objeto que controla o LCD
 LiquidCrystal_74HC595 lcd(dataPin, clockPin,latchPin, registerSelect, enableLCD, dataPinFour,dataPinFive, dataPinSix, dataPinSeven);
@@ -237,9 +235,6 @@ byte ice[8] =  {0b00100 ,
 IRrecv irrecv(IRPin);
 //Objeto que contem o dados de uma informação recebida pelo o sensor de Infra-vermelhos
 decode_results results;
-
-//https://www.pjrc.com/teensy/td_libs_IRremote.html
-
 
 
 
