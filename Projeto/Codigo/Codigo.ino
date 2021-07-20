@@ -729,7 +729,7 @@ void printTimeLeft(){
    * 
   */
   int stopTimeInit = millis();
-  //IRpause();
+  IRpause();
   checkTemp(tempMaxLimit, tempMinLimit);
   int stopTimeEnd = millis();
 
@@ -828,11 +828,11 @@ void cicloDeLavagem(int motorSpeed, int  cycleDuration, int tempMaxLimit){
   int drainDuration = 0.25 * cycleDuration;
 
   //São chamadas as 4 fases de lavagem
-  lavagem(washDuration, motorSpeed);
+  lavagem(washDuration, (motorSpeed-2));
   //Esta fase é a de exaguamento
   lavagem(rinseDuration, (motorSpeed-5));
   centrifugacao(spinDuration, motorSpeed);
-  descarga(drainDuration, motorSpeed);
+  descarga(drainDuration, motorSpeed-2);
 
   //Led verde é ativado
   digitalWrite(greenLed, LOW);
